@@ -1,0 +1,72 @@
+
+> build
+> react-router build
+
+[36mvite v7.3.0 [32mbuilding client environment for production...[36m[39m
+transforming...
+[32m✓[39m 64 modules transformed.
+[31m✗[39m Build failed in 2.09s
+[31m[commonjs--resolver] [31mServer-only module referenced by client[31m
+
+    '../services/properties.server' imported by route 'app/routes/properties.tsx'
+
+  React Router automatically removes server-code from these exports:
+    `loader`, `action`, `middleware`, `headers`
+
+  But other route exports in 'app/routes/properties.tsx' depend on '../services/properties.server'.
+
+  See https://reactrouter.com/explanation/code-splitting#removal-of-server-code
+[39m
+    at Object.resolveId (C:\Users\COMPTABILITE EBC\source\repos\elite_immobilier\elite-erp\node_modules\@react-router\dev\dist\vite.js:3832:17)
+    at PluginDriver.hookFirstAndGetPlugin (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:22453:28)
+    at resolveId (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:20929:26)
+    at ModuleLoader.resolveId (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:21366:15)
+    at Object.resolveId (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/vite/dist/node/chunks/config.js:4154:21)
+    at PluginDriver.hookFirstAndGetPlugin (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:22453:28)
+    at resolveId (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:20929:26)
+    at ModuleLoader.resolveId (file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:21366:15)
+    at file:///C:/Users/COMPTABILITE%20EBC/source/repos/elite_immobilier/elite-erp/node_modules/rollup/dist/es/shared/node-entry.js:21670:50 {
+  code: 'PLUGIN_ERROR',
+  plugin: 'commonjs--resolver',
+  hook: 'resolveId',
+  watchFiles: [
+    'C:\\Users\\COMPTABILITE EBC\\source\\repos\\elite_immobilier\\elite-erp\\package.json',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/root.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/home.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/_protected.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.finance.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.agents.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/@react-router/dev/dist/config/defaults/entry.client.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.projects.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.employees.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.properties.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/direction.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.commercial.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/hr.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/agency.validations.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/commercial.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/construction.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/properties.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/visits.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/legal.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/it.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/finance.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/documents.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/logout.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/api.messages.ts',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/login.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/app/routes/api.tickets.tsx',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react/jsx-runtime.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react/index.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-dom/client.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-router/dist/development/dom-export.mjs',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react/cjs/react-jsx-runtime.production.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react/cjs/react.production.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-router/dist/development/chunk-PMGK554W.mjs',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-router/dist/development/chunk-WWGJGFF6.mjs',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-dom/index.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/react-dom/cjs/react-dom-client.production.js',
+    'C:/Users/COMPTABILITE EBC/source/repos/elite_immobilier/elite-erp/node_modules/scheduler/index.js'
+  ]
+}

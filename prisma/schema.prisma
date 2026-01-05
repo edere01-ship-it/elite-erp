@@ -1,0 +1,435 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Users & Auth ---
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  email        String    @unique
+  password     String // Hashed
+  role         String    @default("user") // admin, manager, agent, user
+  permissions  String[]
+  status       String    @default("active")
+  lastLogin    DateTime?
+  lastLogout   DateTime?
+  lastActivity DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  visits                Visit[]
+  projects              ConstructionProject[]
+  tickets               Ticket[]
+  auditLogs             AuditLog[]
+  assets                Asset[]
+  documents             Document[]
+  transactionsRecorded  Transaction[]         @relation("TransactionRecorder")
+  transactionsValidated Transaction[]         @relation("TransactionValidator")
+  expenses              ExpenseReport[]
+  legalCases            LegalCase[]
+
+  employee Employee?
+  
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+// --- Agencies ---
+
+model Agency {
+  id        String   @id @default(uuid())
+  name      String
+  address   String
+  city      String
+  phone     String
+  email     String
+  manager   String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employees     Employee[]
+  PayrollRun    PayrollRun[]
+  Transaction   Transaction[]
+  Invoice       Invoice[]
+  ExpenseReport ExpenseReport[]
+  Property      Property[]
+}
+
+// --- HR ---
+
+model Employee {
+  id         String   @id @default(uuid())
+  firstName  String
+  lastName   String
+  position   String
+  department String
+  email      String   @unique
+  phone      String
+  startDate  DateTime
+  salary     Float
+  status     String   @default("active") // active, on_leave, terminated
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  pendingAgencyId        String? // For validation workflow
+  assignmentNotification Boolean @default(false)
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  payrollItems PayrollItem[]
+}
+
+model PayrollRun {
+  id          String   @id @default(uuid())
+  month       Int
+  year        Int
+  status      String   @default("draft") // draft, hr_validated, finance_validated, direction_approved, paid
+  totalAmount Float    @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items PayrollItem[]
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  @@unique([month, year, agencyId]) // Scoped uniqueness by agency
+}
+
+model PayrollItem {
+  id         String @id @default(uuid())
+  baseSalary Float
+  bonus      Float  @default(0) // Other bonuses
+
+  // Deductions & Taxes
+  its               Float @default(0) // Impôt sur Traitements et Salaires
+  cnps              Float @default(0) // Caisse Nationale de Prévoyance Sociale
+  salaryAdvance     Float @default(0) // Avance sur salaire
+  latenessDeduction Float @default(0) // Retenue pour retard
+
+  deduction Float @default(0) // Other deductions
+  netSalary Float
+
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id])
+
+  payrollRunId String
+  payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id])
+}
+
+// --- Commercial ---
+
+model Client {
+  id          String   @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String?  @unique // Optional now
+  phone       String
+  idType      String? // CNI, Passport, Attestation
+  idNumber    String? // The ID number
+  photo       String? // URL/Path to profile photo
+  idCardRecto String? // URL/Path to ID card recto
+  idCardVerso String? // URL/Path to ID card verso
+  type        String // buyer, seller, tenant, landloard
+  status      String // active, inactive, prospect
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  visits     Visit[]
+  contracts  Contract[]
+  invoices   Invoice[]
+  legalCases LegalCase[]
+}
+
+// --- Properties ---
+
+model Property {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  price       Float
+  type        String // apartment, villa, land, commercial
+  status      String // available, sold, rented
+  address     String
+  city        String
+  area        Float
+  rooms       Int
+  images      String[]
+  features    String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  developmentId String?
+  development   LandDevelopment? @relation(fields: [developmentId], references: [id])
+  visits        Visit[]
+  contracts     Contract[]
+  legalCases    LegalCase[]
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+}
+
+model LandDevelopment {
+  id            String @id @default(uuid())
+  name          String
+  location      String
+  totalArea     Float
+  totalLots     Int
+  availableLots Int
+  progress      Int // 0-100
+  status        String
+
+  properties Property[]
+}
+
+// --- Visits ---
+
+model Visit {
+  id     String   @id @default(uuid())
+  date   DateTime
+  status String // scheduled, completed, cancelled
+  notes  String?
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  agentId String
+  agent   User   @relation(fields: [agentId], references: [id])
+}
+
+// --- Construction ---
+
+model ConstructionProject {
+  id        String    @id @default(uuid())
+  name      String
+  location  String
+  type      String
+  status    String // planned, in_progress, completed, paused
+  budget    Float
+  spent     Float     @default(0)
+  progress  Int       @default(0)
+  startDate DateTime
+  endDate   DateTime?
+
+  managerId String
+  manager   User   @relation(fields: [managerId], references: [id])
+
+  milestones    Milestone[]
+  ExpenseReport ExpenseReport[]
+}
+
+model Milestone {
+  id        String   @id @default(uuid())
+  title     String
+  date      DateTime
+  completed Boolean  @default(false)
+
+  projectId String
+  project   ConstructionProject @relation(fields: [projectId], references: [id])
+}
+
+// --- Finance ---
+
+model Transaction {
+  id            String   @id @default(uuid())
+  date          DateTime
+  description   String
+  amount        Float
+  type          String // income, expense
+  category      String
+  status        String // pending, completed, cancelled
+  reference     String?
+  paymentMethod String
+
+  recordedBy  String?
+  recorder    User?   @relation("TransactionRecorder", fields: [recordedBy], references: [id])
+  validatedBy String?
+  validator   User?   @relation("TransactionValidator", fields: [validatedBy], references: [id])
+  sourceId    String?
+  sourceType  String? // invoice, expense, payroll
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+}
+
+model Invoice {
+  id        String   @id @default(uuid())
+  number    String   @unique
+  type      String // invoice, quote
+  status    String // draft, sent, paid, overdue, agency_validated
+  issueDate DateTime
+  dueDate   DateTime
+  subtotal  Float
+  taxAmount Float
+  total     Float
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  items InvoiceItem[]
+}
+
+model InvoiceItem {
+  id          String @id @default(uuid())
+  description String
+  quantity    Int
+  unitPrice   Float
+  total       Float
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+}
+
+model ExpenseReport {
+  id          String   @id @default(uuid())
+  amount      Float
+  category    String
+  status      String // pending, agency_validated, approved, rejected
+  date        DateTime
+  description String
+  receiptUrl  String?
+
+  submitterId String
+  submitter   User                 @relation(fields: [submitterId], references: [id])
+  projectId   String?
+  project     ConstructionProject? @relation(fields: [projectId], references: [id])
+
+  agencyId String?
+  agency   Agency? @relation(fields: [agencyId], references: [id])
+}
+
+// --- Legal ---
+
+model Contract {
+  id          String    @id @default(uuid())
+  title       String
+  type        String
+  startDate   DateTime
+  endDate     DateTime?
+  status      String
+  documentUrl String?
+  reference   String?
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+}
+
+model LegalCase {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  status      String   @default("open")
+  priority    String   @default("medium")
+  type        String   @default("other")
+  openedDate  DateTime @default(now())
+  reference   String?
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id])
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+}
+
+// --- Documents ---
+
+model Document {
+  id        String   @id @default(uuid())
+  name      String
+  type      String
+  size      String
+  path      String
+  category  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+}
+
+// --- IT ---
+
+model Asset {
+  id           String   @id @default(uuid())
+  name         String
+  type         String
+  serialNumber String   @unique
+  status       String
+  purchaseDate DateTime
+
+  assignedToId String?
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id])
+}
+
+model Ticket {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  priority    String
+  status      String
+  category    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  requesterId String
+  requester   User   @relation(fields: [requesterId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String
+  module    String?
+  timestamp DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+// --- Messaging ---
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  read       Boolean  @default(false)
+  
+  senderId   String
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  
+  receiverId String
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  
+  attachmentUrl String?
+  
+  createdAt  DateTime @default(now())
+}

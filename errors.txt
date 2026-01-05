@@ -1,0 +1,12 @@
+﻿app/routes/clients.tsx(1,40): error TS2300: Duplicate identifier 'ActionFunctionArgs'.
+app/routes/clients.tsx(17,10): error TS2305: Module '"@react-router/node"' has no exported member 'unstable_parseMultipartFormData'.
+app/routes/clients.tsx(17,43): error TS2305: Module '"@react-router/node"' has no exported member 'unstable_createFileUploadHandler'.
+app/routes/clients.tsx(17,77): error TS2305: Module '"@react-router/node"' has no exported member 'unstable_composeUploadHandlers'.
+app/routes/clients.tsx(17,109): error TS2305: Module '"@react-router/node"' has no exported member 'unstable_memoryUploadHandler'.
+app/routes/clients.tsx(17,144): error TS2300: Duplicate identifier 'ActionFunctionArgs'.
+app/routes/clients.tsx(17,144): error TS2305: Module '"@react-router/node"' has no exported member 'ActionFunctionArgs'.
+app/routes/clients.tsx(24,22): error TS7031: Binding element 'filename' implicitly has an 'any' type.
+app/routes/clients.tsx(159,13): error TS18047: 'client.email' is possibly 'null'.
+app/routes/properties.tsx(13,79): error TS2307: Cannot find module '~/services/properties.server' or its corresponding type declarations.
+app/routes/properties.tsx(537,17): error TS2322: Type '{ createdAt: string; updatedAt: string; tenantName: string; tenantPhone: string; unpaidMonths: number; unpaidAmount: number; contracts: { id: string; status: string; type: string; title: string; reference: string | null; ... 4 more ...; documentUrl: string | null; }[]; ... 12 more ...; developmentId: string | null; ...' is not assignable to type 'Property[]'.
+  Type '{ createdAt: string; updatedAt: string; tenantName: string; tenantPhone: string; unpaidMonths: number; unpaidAmount: number; contracts: { id: string; status: string; type: string; title: string; reference: string | null; ... 4 more ...; documentUrl: string | null; }[]; ... 12 more ...; developmentId: string | null; }' is missing the following properties from type 'Property': currency, location, size

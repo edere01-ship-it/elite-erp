@@ -1,0 +1,33 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Production
+build/
+public/build/
+
+# Environment variables
+.env
+.env.production
+.env.test
+
+# Remix / Vite
+.cache/
+.vite/
+.vercel
+
+# System
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
