@@ -151,7 +151,11 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
 
     return (
         <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200 flex flex-col">
-            <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} />
+            <MeetingModal
+                isOpen={isMeetingModalOpen}
+                onClose={() => setIsMeetingModalOpen(false)}
+                recipients={fetcher.data?.recipients || []}
+            />
 
             {/* Header */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 text-white">

@@ -98,7 +98,10 @@ export async function getRecipients(currentUserId: string) {
         select: {
             id: true,
             username: true,
-            role: true
+            role: true,
+            employee: {
+                select: { department: true }
+            }
         },
         orderBy: {
             username: 'asc'

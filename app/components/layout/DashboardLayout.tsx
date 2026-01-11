@@ -45,7 +45,40 @@ const HeaderActions = ({
         return () => clearInterval(interval);
     }, []);
 
+    const [alertedMeetings, setAlertedMeetings] = useState<string[]>([]);
+
     const count = fetcher.data ? (fetcher.data as any).unreadCount : 0;
+    const meetings = fetcher.data ? (fetcher.data as any).meetings : [];
+
+    // Alarm Logic
+    useEffect(() => {
+        if (!meetings) return;
+
+        meetings.forEach((m: any) => {
+            const timeDiff = new Date(m.startTime).getTime() - Date.now();
+            // Alert if within 15 minutes and not yet alerted
+            if (timeDiff > 0 && timeDiff < 15 * 60 * 1000 && !alertedMeetings.includes(m.id)) {
+                // Play Sound
+                const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+                audio.play().catch(e => console.error("Audio play failed", e));
+
+                // Show Notification
+                if (Notification.permission === "granted") {
+                    new Notification("Rappel de Réunion", {
+                        body: `La réunion "${m.title}" commence dans ${Math.ceil(timeDiff / 60000)} minutes.`
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission();
+                }
+
+                // Temporary specific UI alert? We can rely on the bell or a toast. 
+                // For now, let's auto-open the messenger panel or show a badge.
+                // Or just rely on the audio + native notification.
+
+                setAlertedMeetings(prev => [...prev, m.id]);
+            }
+        });
+    }, [meetings, alertedMeetings]);
 
     return (
         <div className="flex items-center gap-2">
