@@ -1,29 +1,34 @@
-FROM node:20-alpine AS development-dependencies-env
+# 1️⃣ Install all deps (dev + prod)
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
+COPY prisma ./prisma
 
-FROM node:20-alpine AS production-dependencies-env
+# 2️⃣ Build the app
+FROM node:20-alpine AS build
 WORKDIR /app
+COPY --from=deps /app ./
+COPY . .
+RUN npm run build
+
+# 3️⃣ Production image
+FROM node:20-alpine
+WORKDIR /app
+
+# Prisma needs openssl
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-FROM node:20-alpine AS build-env
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY --from=development-dependencies-env /app/node_modules ./node_modules
-COPY . .
+# COPY prisma schema
+COPY prisma ./prisma
 
-# ✅ OBLIGATOIRE POUR PRISMA
+# 🔥 CRUCIAL: generate Prisma CLIENT HERE
 RUN npx prisma generate
 
-RUN npm run build
-
-FROM node:20-alpine
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY --from=production-dependencies-env /app/node_modules ./node_modules
-COPY --from=build-env /app/build ./build
+# Copy build output
+COPY --from=build /app/build ./build
 
 CMD ["npm", "run", "start"]
