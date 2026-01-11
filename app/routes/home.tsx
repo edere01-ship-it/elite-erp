@@ -49,14 +49,16 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect("/logout");
   }
 
-  // Check if user is allowed to view the main dashboard
-  const hasDashboardAccess = user.role === 'admin' || user.permissions.includes("dashboard.view") || user.permissions.includes("admin.access");
+  // Check if user is allowed to view the main dashboard (Global Stats)
+  const hasGlobalDashboardAccess = user.role === 'admin' || user.permissions.includes("dashboard.view") || user.permissions.includes("admin.access");
 
-  if (!hasDashboardAccess) {
+  // Check if they have access to AT LEAST ONE module (Launcher Mode)
+  // We effectively check if they are not just "user" with no permissions.
+  const hasAnyModuleAccess = user.permissions.length > 0 || user.role !== 'user';
+
+  if (!hasGlobalDashboardAccess && !hasAnyModuleAccess) {
     const { getRedirectPath } = await import("~/utils/permissions.server");
     const redirectPath = getRedirectPath(user);
-
-    // Prevent infinite redirect loop if getRedirectPath returns "/" (though logic should prevent this for non-admins)
     if (redirectPath !== "/") {
       throw redirect(redirectPath);
     }
@@ -68,8 +70,8 @@ export async function loader({ request }: Route.LoaderArgs) {
     include: { agency: true }
   });
 
-  const stats = await getDashboardStats();
-  return { stats, employee };
+  const stats = hasGlobalDashboardAccess ? await getDashboardStats() : null;
+  return { stats, employee, hasGlobalDashboardAccess };
 }
 
 export function meta({ }: Route.MetaArgs) {
@@ -80,7 +82,32 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 export default function Home() {
-  const { stats } = useLoaderData<typeof loader>();
+  const { stats, hasGlobalDashboardAccess } = useLoaderData<typeof loader>();
+
+  if (!hasGlobalDashboardAccess || !stats) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center space-y-8 py-12">
+        <div className="text-center space-y-4 max-w-2xl px-4">
+          <div className="mx-auto w-16 h-16 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
+            <span className="text-white font-bold text-2xl">E</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">Bienvenue sur Elite ERP</h1>
+          <p className="text-lg text-gray-600">
+            Sélectionnez un module dans le menu latéral pour commencer.
+          </p>
+          <div className="p-4 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100">
+            <p className="font-semibold">💡 Astuce</p>
+            <p>Vous avez accès à plusieurs modules. Utilisez la barre latérale gauche pour naviguer entre eux.</p>
+          </div>
+        </div>
+
+        {/* Optional: We could render a grid of available modules here too, but sidebar does this well. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl px-6">
+          {/* Logic to replicate Sidebar items as cards could go here, but for now Sidebar is sufficient and visible. */}
+        </div>
+      </div>
+    );
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "XOF" }).format(amount);
