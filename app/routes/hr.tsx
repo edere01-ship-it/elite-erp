@@ -34,6 +34,7 @@ export async function action({ request }: ActionFunctionArgs) {
     console.log("Form Data:", Object.fromEntries(formData));
     const { prisma } = await import("~/db.server");
     const { requirePermission } = await import("~/utils/permissions.server");
+    const { uploadFile } = await import("~/utils/upload.server");
 
     // Helper to parse currency input (e.g. "150 000" -> 150000)
     const parseCurrency = (val: string) => parseFloat(val.replace(/\s/g, '')) || 0;
@@ -53,6 +54,21 @@ export async function action({ request }: ActionFunctionArgs) {
             const startDateRaw = formData.get("startDate") as string;
             const startDate = startDateRaw ? new Date(startDateRaw) : new Date();
 
+            // Handle Files
+            const photoFile = formData.get("photo") as File | null;
+            const identityDocFile = formData.get("identityDocument") as File | null;
+
+            let photoPath = null;
+            let identityDocPath = null;
+
+            if (photoFile && photoFile.size > 0 && photoFile.name) {
+                photoPath = await uploadFile(photoFile, "employees/photos");
+            }
+
+            if (identityDocFile && identityDocFile.size > 0 && identityDocFile.name) {
+                identityDocPath = await uploadFile(identityDocFile, "employees/identities");
+            }
+
             await prisma.employee.create({
                 data: {
                     firstName,
@@ -63,8 +79,16 @@ export async function action({ request }: ActionFunctionArgs) {
                     department: formData.get("department") as string,
                     salary,
                     startDate,
-                    status: 'pending_agency', // Force pending_agency on creation
-                    agencyId: formData.get("agencyId") as string || null
+                    status: 'pending_agency',
+                    agencyId: formData.get("agencyId") as string || null,
+
+                    // New Fields
+                    identityType: formData.get("identityType") as string || null,
+                    identityNumber: formData.get("identityNumber") as string || null,
+                    cmuNumber: formData.get("cmuNumber") as string || null,
+                    cnpsNumber: formData.get("cnpsNumber") as string || null,
+                    photo: photoPath,
+                    identityDocument: identityDocPath
                 }
             });
             return { success: true };
@@ -78,19 +102,42 @@ export async function action({ request }: ActionFunctionArgs) {
         await requirePermission(userId, PERMISSIONS.HR_EDIT);
 
         const id = formData.get("id") as string;
+
+        // Fetch existing to handle file updates (if replaced)
+        // For simplicity, we just look for new files. 
+        // If needed we could delete old ones, but for now just overwrite reference.
+
+        const photoFile = formData.get("photo") as File | null;
+        const identityDocFile = formData.get("identityDocument") as File | null;
+
+        const updateData: any = {
+            firstName: formData.get("firstName") as string,
+            lastName: formData.get("lastName") as string,
+            email: formData.get("email") as string,
+            phone: formData.get("phone") as string,
+            position: formData.get("position") as string,
+            department: formData.get("department") as string,
+            salary: parseCurrency(formData.get("salary") as string),
+            status: formData.get("status") as string,
+            agencyId: formData.get("agencyId") as string || null,
+
+            identityType: formData.get("identityType") as string || null,
+            identityNumber: formData.get("identityNumber") as string || null,
+            cmuNumber: formData.get("cmuNumber") as string || null,
+            cnpsNumber: formData.get("cnpsNumber") as string || null,
+        };
+
+        if (photoFile && photoFile.size > 0 && photoFile.name) {
+            updateData.photo = await uploadFile(photoFile, "employees/photos");
+        }
+
+        if (identityDocFile && identityDocFile.size > 0 && identityDocFile.name) {
+            updateData.identityDocument = await uploadFile(identityDocFile, "employees/identities");
+        }
+
         await prisma.employee.update({
             where: { id },
-            data: {
-                firstName: formData.get("firstName") as string,
-                lastName: formData.get("lastName") as string,
-                email: formData.get("email") as string,
-                phone: formData.get("phone") as string,
-                position: formData.get("position") as string,
-                department: formData.get("department") as string,
-                salary: parseCurrency(formData.get("salary") as string),
-                status: formData.get("status") as string,
-                agencyId: formData.get("agencyId") as string || null
-            }
+            data: updateData
         });
         return { success: true };
     }

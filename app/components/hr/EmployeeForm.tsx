@@ -11,7 +11,7 @@ interface EmployeeFormProps {
 
 export function EmployeeForm({ defaultValues, agencies, isSubmitting, onCancel }: EmployeeFormProps) {
     return (
-        <Form method="post" className="space-y-4">
+        <Form method="post" className="space-y-4" encType="multipart/form-data">
             <input type="hidden" name="intent" value={defaultValues?.id ? "update_employee" : "create_employee"} />
             {defaultValues?.id && <input type="hidden" name="id" value={defaultValues.id} />}
 
@@ -144,6 +144,96 @@ export function EmployeeForm({ defaultValues, agencies, isSubmitting, onCancel }
                             </option>
                         ))}
                     </select>
+                </div>
+
+                {/* Identity & Social */}
+                <div className="col-span-1 sm:col-span-2 space-y-4 border-t pt-4 mt-4">
+                    <h3 className="text-lg font-medium text-gray-900">Documents & Social</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        <div>
+                            <label htmlFor="photo" className="block text-sm font-medium text-gray-700">
+                                Photo de l'employé
+                            </label>
+                            <input
+                                type="file"
+                                name="photo"
+                                id="photo"
+                                accept="image/*"
+                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="identityType" className="block text-sm font-medium text-gray-700">
+                                Type de pièce d'identité
+                            </label>
+                            <select
+                                name="identityType"
+                                id="identityType"
+                                defaultValue={defaultValues?.identityType || ""}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            >
+                                <option value="">Sélectionner...</option>
+                                <option value="CNI">CNI</option>
+                                <option value="PASSPORT">Passeport</option>
+                                <option value="ATTESTATION">Attestation d'identité</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="identityNumber" className="block text-sm font-medium text-gray-700">
+                                Numéro de pièce
+                            </label>
+                            <input
+                                type="text"
+                                name="identityNumber"
+                                id="identityNumber"
+                                defaultValue={defaultValues?.identityNumber}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="identityDocument" className="block text-sm font-medium text-gray-700">
+                                Scan de la pièce
+                            </label>
+                            <input
+                                type="file"
+                                name="identityDocument"
+                                id="identityDocument"
+                                accept="image/*,application/pdf"
+                                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="cmuNumber" className="block text-sm font-medium text-gray-700">
+                                Numéro CMU / Couverture Maladie
+                            </label>
+                            <input
+                                type="text"
+                                name="cmuNumber"
+                                id="cmuNumber"
+                                defaultValue={defaultValues?.cmuNumber}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label htmlFor="cnpsNumber" className="block text-sm font-medium text-gray-700">
+                                Numéro CNPS
+                            </label>
+                            <input
+                                type="text"
+                                name="cnpsNumber"
+                                id="cnpsNumber"
+                                defaultValue={defaultValues?.cnpsNumber}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                            />
+                        </div>
+
+                    </div>
                 </div>
 
                 {defaultValues?.id && (

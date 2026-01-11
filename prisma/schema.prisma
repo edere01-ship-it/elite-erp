@@ -93,6 +93,14 @@ model Employee {
   updatedAt DateTime @updatedAt
 
   payrollItems PayrollItem[]
+
+  // Identity & Social
+  identityType     String?   // CNI, PASSPORT
+  identityNumber   String?
+  identityDocument String?   // Path to file
+  photo            String?   // Path to file
+  cmuNumber        String?
+  cnpsNumber       String?
 }
 
 model PayrollRun {
