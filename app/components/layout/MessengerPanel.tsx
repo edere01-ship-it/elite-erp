@@ -203,13 +203,16 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
                 <button
                     onClick={() => { setActiveTab('meetings'); setSelectedConversation(null); }}
                     className={cn(
-                        "flex-1 py-3 text-sm font-medium transition-colors border-b-2",
+                        "flex-1 py-3 text-sm font-medium transition-colors border-b-2 flex items-center justify-center gap-1",
                         activeTab === 'meetings'
                             ? "border-green-600 text-green-600 bg-green-50/50"
                             : "border-transparent text-gray-500 hover:text-gray-700"
                     )}
                 >
-                    Réunions
+                    Réunions 📹
+                    {(fetcher.data?.meetings || []).length > 0 && (
+                        <span className="flex h-2 w-2 rounded-full bg-red-500"></span>
+                    )}
                 </button>
                 <button
                     onClick={() => { setActiveTab('compose'); setSelectedConversation(null); }}
