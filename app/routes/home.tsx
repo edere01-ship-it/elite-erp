@@ -70,7 +70,17 @@ export async function loader({ request }: Route.LoaderArgs) {
     include: { agency: true }
   });
 
-  const stats = hasGlobalDashboardAccess ? await getDashboardStats() : null;
+  let stats = null;
+  if (hasGlobalDashboardAccess) {
+    try {
+      stats = await getDashboardStats();
+    } catch (e) {
+      console.error("Failed to load dashboard stats:", e);
+      // If stats fail, we can fall back to the launcher view (stats=null)
+      // or just show empty stats. But launcher view is safer as it hides broken charts.
+    }
+  }
+
   return { stats, employee, hasGlobalDashboardAccess };
 }
 

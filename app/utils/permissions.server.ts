@@ -38,33 +38,10 @@ export function getRedirectPath(user: { role: string; permissions: string[] }) {
     const p = user.permissions;
     const has = (perm: string) => p.includes(perm);
 
-    // Priority 1: Direction / Admin
-    if (user.role === 'admin' || has("admin.access")) {
+    // Simplified Logic: If user has ANY permission, send to Dashboard (Launcher or Stats)
+    // This allows multi-module users to choose where to go.
+    if (p.length > 0 || user.role !== 'user') {
         return "/";
-    }
-    if (has("direction.view")) {
-        return "/direction";
-    }
-    // Priority 2: Agency Director
-    if (has("agency.view") || has("agency.manage")) {
-        return "/agency";
-    }
-    // Priority 3: Dept Heads
-    if (has("hr.view")) {
-        return "/hr";
-    }
-    if (has("finance.view")) {
-        return "/finance";
-    }
-    if (has("it.manage")) {
-        return "/it";
-    }
-    // Priority 4: Specialists
-    if (has("commercial.view") || has("visits.view")) {
-        return "/commercial";
-    }
-    if (has("properties.view")) {
-        return "/properties";
     }
 
     // Default fallback (maybe a generic 'no access' or profile page)
