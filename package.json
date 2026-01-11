@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@prisma/client": "^5.22.0",
     "@react-router/node": "7.10.1",
     "@react-router/serve": "7.10.1",
@@ -30,6 +31,7 @@
     "@tailwindcss/vite": "^4.1.13",
     "@types/bcryptjs": "^2.4.6",
     "@types/cookie": "^0.6.0",
+    "@types/ioredis": "^4.28.10",
     "@types/node": "^22",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",

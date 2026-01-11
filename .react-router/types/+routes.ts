@@ -80,15 +80,12 @@ type Pages = {
   "/api/messages": {
     params: {};
   };
-  "/debug/agency": {
-    params: {};
-  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages" | "/debug/agency";
+    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages";
   };
   "routes/_protected.tsx": {
     id: "routes/_protected";
@@ -186,10 +183,6 @@ type RouteFiles = {
     id: "routes/api.messages";
     page: "/api/messages";
   };
-  "routes/debug.agency.tsx": {
-    id: "routes/debug.agency";
-    page: "/debug/agency";
-  };
 };
 
 type RouteModules = {
@@ -218,5 +211,4 @@ type RouteModules = {
   "routes/logout": typeof import("./app/routes/logout.tsx");
   "routes/api.tickets": typeof import("./app/routes/api.tickets.tsx");
   "routes/api.messages": typeof import("./app/routes/api.messages.ts");
-  "routes/debug.agency": typeof import("./app/routes/debug.agency.tsx");
 };

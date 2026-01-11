@@ -1,9 +1,8 @@
-
-import type { Route } from "./+types/api.sse";
+import type { LoaderFunctionArgs } from "react-router";
 import { getSession } from "~/sessions.server";
 import { eventStream } from "~/utils/sse.server";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
     const session = await getSession(request.headers.get("Cookie"));
     const userId = session.get("userId");
 

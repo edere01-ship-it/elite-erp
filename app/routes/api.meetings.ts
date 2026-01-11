@@ -1,9 +1,9 @@
-
-import type { Route } from "./+types/api.meetings";
+import type { ActionFunctionArgs } from "react-router";
 import { getSession } from "~/sessions.server";
 import { prisma } from "~/db.server";
+import { randomUUID } from "node:crypto";
 
-export async function action({ request }: Route.ActionArgs) {
+export async function action({ request }: ActionFunctionArgs) {
     const session = await getSession(request.headers.get("Cookie"));
     const userId = session.get("userId");
 

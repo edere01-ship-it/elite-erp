@@ -24,7 +24,7 @@ export function meta({ }: Route.MetaArgs) {
 }
 
 function CollectionModal({ property, isOpen, onClose, isSubmitting }: any) {
-    if (!isOpen) return null;
+    if (!isOpen || !property) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
@@ -176,9 +176,13 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-    // ...
+    const session = await getSession(request.headers.get("Cookie"));
+    const userId = session.get("userId");
+    const formData = await request.formData();
+    const intent = formData.get("intent");
     if (intent === "create") {
-        await requirePermission(userId!, PERMISSIONS.PROPERTIES_CREATE);
+        if (!userId) return null;
+        await requirePermission(userId, PERMISSIONS.PROPERTIES_CREATE);
         // ... params ...
         const title = formData.get("title") as string;
         const priceStr = formData.get("price") as string;
@@ -217,8 +221,7 @@ export async function action({ request }: ActionFunctionArgs) {
             data: {
                 title, price, type, status, address, city, area, rooms, description,
                 images: imageUrl ? [imageUrl] : [],
-                features,
-                agentId: userId // linking to creator as agent if applicable, or optional
+                features
             }
         });
 
@@ -241,7 +244,8 @@ export async function action({ request }: ActionFunctionArgs) {
 
 
     if (intent === "update") {
-        await requirePermission(userId!, PERMISSIONS.PROPERTIES_EDIT);
+        if (!userId) return null;
+        await requirePermission(userId, PERMISSIONS.PROPERTIES_EDIT);
         const id = formData.get("id") as string;
         const title = formData.get("title") as string;
         const priceStr = formData.get("price") as string;
@@ -323,7 +327,8 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
     if (intent === "delete") {
-        await requirePermission(userId!, PERMISSIONS.PROPERTIES_EDIT);
+        if (!userId) return null;
+        await requirePermission(userId, PERMISSIONS.PROPERTIES_EDIT);
         const id = formData.get("id") as string;
         await prisma.property.delete({ where: { id } });
         return { success: true };
@@ -334,7 +339,8 @@ export async function action({ request }: ActionFunctionArgs) {
         // Rent collection is more finance related but initiated from properties.
         // Let's require PROPERTIES_EDIT for now or FINANCE_CREATE.
         // Using PROPERTIES_EDIT as it modifies property state (sort of).
-        await requirePermission(userId!, PERMISSIONS.PROPERTIES_EDIT);
+        if (!userId) return null;
+        await requirePermission(userId, PERMISSIONS.PROPERTIES_EDIT);
 
         const propertyId = formData.get("propertyId") as string;
         const months = parseInt(formData.get("months") as string);

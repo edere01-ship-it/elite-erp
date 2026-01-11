@@ -1,5 +1,3 @@
-
-import { Dialog } from "@headlessui/react";
 import { X, Calendar, Video, Loader2 } from "lucide-react";
 import { useFetcher } from "react-router";
 import { useState } from "react";

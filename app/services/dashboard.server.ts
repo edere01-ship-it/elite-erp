@@ -1,6 +1,19 @@
 import { prisma } from "~/db.server";
+import { redis } from "~/utils/redis.server";
 
 export async function getDashboardStats() {
+    const cacheKey = "dashboard:stats";
+
+    // Try to get from cache
+    try {
+        const cached = await redis.get(cacheKey);
+        if (cached) {
+            return JSON.parse(cached);
+        }
+    } catch (e) {
+        console.warn("Redis error:", e);
+    }
+
     const [
         propertiesCount,
         propertiesAvailable,
@@ -29,7 +42,7 @@ export async function getDashboardStats() {
         prisma.client.count()
     ]);
 
-    return {
+    const stats = {
         properties: {
             total: propertiesCount,
             available: propertiesAvailable
@@ -45,4 +58,13 @@ export async function getDashboardStats() {
         tickets: openTicketsCount,
         clients: clientsCount
     };
+
+    // Save to cache (60 seconds)
+    try {
+        await redis.set(cacheKey, JSON.stringify(stats), "EX", 60);
+    } catch (e) {
+        console.warn("Redis set error:", e);
+    }
+
+    return stats;
 }
