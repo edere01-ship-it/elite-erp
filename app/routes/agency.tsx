@@ -50,8 +50,11 @@ export default function AgencyDashboard() {
                     <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
                     <h1 className="text-xl font-bold text-gray-900 mb-2">Compte non configuré</h1>
                     <p className="text-gray-500 mb-6">
-                        Votre compte utilisateur n'est associé à aucune agence. Vous ne pouvez pas accéder au tableau de bord.
+                        Votre compte utilisateur n'est associé à aucune agence ou fiche employé.
+                        <br />
+                        Veuillez contacter l'Administrateur pour vérifier que votre email employé correspond bien à votre email de connexion.
                     </p>
+                    <Link to="/logout" className="text-blue-600 hover:underline">Se déconnecter</Link>
                 </div>
             </div>
         );

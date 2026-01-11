@@ -69,6 +69,10 @@ export async function action({ request }: ActionFunctionArgs) {
                 identityDocPath = await uploadFile(identityDocFile, "employees/identities");
             }
 
+            // Attempt to link to existing User
+            const existingUser = await prisma.user.findUnique({ where: { email } });
+
+
             await prisma.employee.create({
                 data: {
                     firstName,
@@ -88,7 +92,8 @@ export async function action({ request }: ActionFunctionArgs) {
                     cmuNumber: formData.get("cmuNumber") as string || null,
                     cnpsNumber: formData.get("cnpsNumber") as string || null,
                     photo: photoPath,
-                    identityDocument: identityDocPath
+                    identityDocument: identityDocPath,
+                    userId: existingUser ? existingUser.id : undefined
                 }
             });
             return { success: true };
@@ -133,6 +138,12 @@ export async function action({ request }: ActionFunctionArgs) {
 
         if (identityDocFile && identityDocFile.size > 0 && identityDocFile.name) {
             updateData.identityDocument = await uploadFile(identityDocFile, "employees/identities");
+        }
+
+        // Attempt to link to existing User if email changed or not linked
+        const existingUser = await prisma.user.findUnique({ where: { email: updateData.email } });
+        if (existingUser) {
+            updateData.userId = existingUser.id;
         }
 
         await prisma.employee.update({
