@@ -118,6 +118,13 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [isMessengerOpen, setIsMessengerOpen] = useState(false);
 
+    // Sync URL with Messenger State
+    useEffect(() => {
+        if (location.search.includes("messenger=open")) {
+            setIsMessengerOpen(true);
+        }
+    }, [location.search]);
+
 
     if (isDashboard) {
         return (
