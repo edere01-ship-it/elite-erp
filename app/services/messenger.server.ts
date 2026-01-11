@@ -31,6 +31,10 @@ export async function sendMessage(senderId: string, receiverUsername: string, co
             receiverId: receiver.id,
             content,
             attachmentUrl
+        },
+        include: {
+            sender: { select: { id: true, username: true } },
+            receiver: { select: { id: true, username: true } }
         }
     });
 }

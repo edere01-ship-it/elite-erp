@@ -1,6 +1,6 @@
 import type { Route } from "./+types/home";
 import { getSession } from "~/sessions.server";
-import { redirect, useLoaderData, Form } from "react-router";
+import { redirect, useLoaderData, Form, Link } from "react-router";
 import { getDashboardStats } from "~/services/dashboard.server";
 import { Building2, Home as HomeIcon, Users, HardHat, Wallet, MonitorCog, PiggyBank, ArrowUpRight, ArrowDownRight, Briefcase } from "lucide-react";
 import { StatCard } from "~/components/dashboard/StatCard";
@@ -111,9 +111,32 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Optional: We could render a grid of available modules here too, but sidebar does this well. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl px-6">
-          {/* Logic to replicate Sidebar items as cards could go here, but for now Sidebar is sufficient and visible. */}
+        {/* Launcher Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 w-full max-w-5xl px-6">
+
+          {/* Collaboration Card */}
+          <Link
+            to="?messenger=open"
+            className="group relative flex flex-col items-center p-6 bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 hover:border-blue-200 hover:-translate-y-1 overflow-hidden"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+            <div className="h-16 w-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 text-3xl shadow-sm group-hover:scale-110 transition-transform">
+              💬
+            </div>
+
+            <h3 className="text-xl font-bold text-gray-900 mb-2 relative">Collaboration</h3>
+            <p className="text-gray-500 text-center text-sm relative">
+              Messagerie instantanée, appels vidéo et réunions d'équipe.
+            </p>
+
+            <div className="mt-4 flex items-center text-blue-600 font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 duration-300">
+              Ouvrir <ArrowUpRight className="ml-1 h-4 w-4" />
+            </div>
+          </Link>
+
+          {/* Can add other module cards here based on permissions if needed later */}
+
         </div>
       </div>
     );

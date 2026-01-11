@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { useFetcher } from "react-router";
-import { Mail, Send, X, Inbox, User, Clock, Loader2, CheckCircle2, Paperclip } from "lucide-react";
+import { Mail, Send, X, Inbox, User, Clock, Loader2, CheckCircle2, Paperclip, Video, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { MeetingModal } from "../collaboration/MeetingModal";
 
 interface Message {
     id: string;
@@ -20,46 +22,74 @@ interface MessengerPanelProps {
 
 export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
     const fetcher = useFetcher();
-    const [activeTab, setActiveTab] = useState<'inbox' | 'compose' | 'conversations'>('inbox');
+    const [activeTab, setActiveTab] = useState<'inbox' | 'compose' | 'conversations' | 'meetings'>('inbox');
     const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
     const [draftMessage, setDraftMessage] = useState<{ to: string, cc: string[], content: string }>({ to: "", cc: [], content: "" });
     const [showCc, setShowCc] = useState(false);
+    const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    // Auto-refresh messages when panel opens
+    // Initial load
     useEffect(() => {
         if (isOpen && fetcher.state === "idle" && !fetcher.data) {
             fetcher.load("/api/messages");
         }
     }, [isOpen]);
 
+    // Real-time SSE Connection
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const eventSource = new EventSource("/api/sse");
+
+        eventSource.onmessage = (event) => {
+            // Keep connection alive
+        };
+
+        eventSource.addEventListener("message", (event) => {
+            const newMessage = JSON.parse(event.data);
+            // We could update local state directly, or just re-fetch to keep it simple and consistent
+            // optimizing: strictly, we should append to 'messages.received' or 'messages.sent' locally.
+            // For MVP speed:
+            fetcher.load("/api/messages");
+
+            // Notification sound could go here
+        });
+
+        return () => {
+            eventSource.close();
+        };
+    }, [isOpen]);
+
+    // Auto-scroll to bottom of chat
+    useEffect(() => {
+        if (selectedConversation && activeTab === 'conversations') {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [fetcher.data, selectedConversation, activeTab]);
+
+
     // Handle form submission response
     useEffect(() => {
         if (fetcher.data?.success && fetcher.state === "idle") {
-            // Reset form if sent successfully
-            if (activeTab === 'compose' || activeTab === 'conversations') {
-                if (activeTab === 'compose') {
-                    setActiveTab('conversations'); // detailed view preferred
-                    setDraftMessage({ to: "", cc: [], content: "" }); // Reset draft
-                    setShowCc(false);
-                }
-                // Reload to see sent/received updates
+            if (activeTab === 'compose' && !fetcher.data.error) {
+                setActiveTab('conversations');
+                setDraftMessage({ to: "", cc: [], content: "" });
+                setShowCc(false);
                 fetcher.load("/api/messages");
-                // If in conversation view, the new message will appear automatically
             }
         }
     }, [fetcher.data, fetcher.state]);
 
     const messages = fetcher.data?.messages || { received: [], sent: [] };
-    const isLoading = fetcher.state === "loading";
+    const isLoading = fetcher.state === "loading" && !fetcher.data;
 
-    // Helper to group messages by conversation partner
     const getConversations = () => {
         const allMessages = [
             ...(messages.received || []).map((m: any) => ({ ...m, type: 'received', partner: m.sender })),
             ...(messages.sent || []).map((m: any) => ({ ...m, type: 'sent', partner: m.receiver }))
         ];
 
-        // Group by partner username
         const groups: { [key: string]: any[] } = {};
         allMessages.forEach(msg => {
             const partnerName = msg.partner.username;
@@ -67,12 +97,10 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
             groups[partnerName].push(msg);
         });
 
-        // Sort messages within groups
         Object.keys(groups).forEach(key => {
             groups[key].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         });
 
-        // Return array of conversations sorted by last message date
         return Object.entries(groups).map(([partnerName, msgs]) => ({
             partnerName,
             messages: msgs,
@@ -97,7 +125,6 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
     const handleForward = (content: string, attachmentUrl?: string) => {
         let forwardContent = `\n\n--- Message Transféré ---\n${content}`;
         if (attachmentUrl) forwardContent += `\n[Pièce jointe originale]: ${attachmentUrl}`;
-
         setDraftMessage({ to: "", cc: [], content: forwardContent });
         setActiveTab('compose');
     };
@@ -114,22 +141,39 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
         });
     };
 
+    const startInstantMeeting = () => {
+        const roomName = `Elite-Meet-${Math.random().toString(36).substring(7)}`;
+        window.open(`https://meet.jit.si/${roomName}`, '_blank');
+        // Ideally we would send an invite message here
+    };
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out border-l border-gray-200 flex flex-col">
+            <MeetingModal isOpen={isMeetingModalOpen} onClose={() => setIsMeetingModalOpen(false)} />
+
             {/* Header */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 text-white">
                 <div className="flex items-center gap-2">
                     <Mail className="h-5 w-5 text-amber-400" />
                     <h2 className="font-bold text-lg">Messagerie Interne</h2>
                 </div>
-                <button
-                    onClick={onClose}
-                    className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                >
-                    <X className="h-5 w-5" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsMeetingModalOpen(true)}
+                        title="Planifier Réunion"
+                        className="p-1 hover:bg-white/10 rounded-full text-blue-200"
+                    >
+                        <CalendarIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                </div>
             </div>
 
             {/* Tabs */}
@@ -155,6 +199,17 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
                     )}
                 >
                     Échanges
+                </button>
+                <button
+                    onClick={() => { setActiveTab('meetings'); setSelectedConversation(null); }}
+                    className={cn(
+                        "flex-1 py-3 text-sm font-medium transition-colors border-b-2",
+                        activeTab === 'meetings'
+                            ? "border-green-600 text-green-600 bg-green-50/50"
+                            : "border-transparent text-gray-500 hover:text-gray-700"
+                    )}
+                >
+                    Réunions
                 </button>
                 <button
                     onClick={() => { setActiveTab('compose'); setSelectedConversation(null); }}
@@ -186,7 +241,9 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
                             </div>
                         )}
 
+                        {/* Messages map... (unchanged) */}
                         {messages.received?.map((msg: Message) => (
+                            // ... (existing message rendering code) ...
                             <div
                                 key={msg.id}
                                 onClick={() => !msg.read && handleMarkAsRead(msg.id)}
@@ -251,11 +308,73 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
                     </div>
                 )}
 
+                {activeTab === 'meetings' && (
+                    <div className="p-4 space-y-4">
+                        <div className="mb-4">
+                            <button
+                                onClick={() => setIsMeetingModalOpen(true)}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+                            >
+                                <CalendarIcon className="h-5 w-5" />
+                                Planifier une réunion
+                            </button>
+                        </div>
+
+                        {(fetcher.data?.meetings || []).length === 0 ? (
+                            <div className="text-center py-10 text-gray-400">
+                                <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                                <p>Aucune réunion prévue</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {(fetcher.data?.meetings || []).map((m: any) => (
+                                    <div key={m.id} className="p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{m.title}</h4>
+                                                <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
+                                                    <Clock className="h-3 w-3" />
+                                                    {new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(m.startTime))}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Org: {m.organizer?.username}
+                                                </p>
+                                            </div>
+                                            {m.link && (
+                                                <a
+                                                    href={m.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                                                    title="Rejoindre"
+                                                >
+                                                    <Video className="h-5 w-5" />
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {activeTab === 'conversations' && (
                     <div className="h-full flex flex-col">
                         {!selectedConversation ? (
                             // Conversations List
                             <div className="p-4 space-y-2">
+                                {/* Quick Action: Instant Video Call */}
+                                <div className="mb-4">
+                                    <button
+                                        onClick={startInstantMeeting}
+                                        className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                                    >
+                                        <Video className="h-5 w-5" />
+                                        Lancer une visio instantanée (Jitsi)
+                                    </button>
+                                </div>
+
                                 {conversations.length === 0 && (
                                     <div className="text-center py-10 text-gray-400">
                                         <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -354,6 +473,7 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
                                             </div>
                                         </div>
                                     ))}
+                                    <div ref={messagesEndRef} />
                                 </div>
 
                                 {/* Quick Reply Area */}
