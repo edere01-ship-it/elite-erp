@@ -14,7 +14,7 @@ interface PayslipManagerProps {
 export function PayslipManager({ payrollRun, employees, agencyName = "Elite Immobilier" }: PayslipManagerProps) {
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("all");
 
-    const generatePDF = (mode: "all" | "individual") => {
+    const generatePDF = async (mode: "all" | "individual") => {
         if (!payrollRun || !payrollRun.items || payrollRun.items.length === 0) {
             alert("Aucune donnée de paie disponible pour cette période.");
             return;
@@ -32,12 +32,30 @@ export function PayslipManager({ payrollRun, employees, agencyName = "Elite Immo
         const doc = new jsPDF();
         const printDate = new Date().toLocaleDateString("fr-FR");
 
+        // Load Logo
+        let logoData: string | null = null;
+        try {
+            const response = await fetch("/logo.png");
+            const blob = await response.blob();
+            logoData = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+        } catch (e) {
+            console.error("Failed to load logo", e);
+        }
+
         itemsToPrint.forEach((item: any, index: number) => {
             if (index > 0) doc.addPage();
 
             const emp = item.employee;
 
             // Header
+            if (logoData) {
+                doc.addImage(logoData, "PNG", 15, 10, 25, 25);
+            }
+
             doc.setFontSize(18);
             doc.setTextColor(41, 128, 185); // Blue
             doc.text(agencyName.toUpperCase(), 105, 20, { align: "center" });
