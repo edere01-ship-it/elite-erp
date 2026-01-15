@@ -61,21 +61,21 @@ export function PayslipManager({ payrollRun, employees, agencyName = "Elite Immo
             doc.text(agencyName.toUpperCase(), 105, 20, { align: "center" });
 
             doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text("Gestion Immobilière & Services", 105, 26, { align: "center" });
+            doc.setTextColor(100, 100, 100);
+            doc.text(String("Gestion Immobilière & Services"), 105, 26, { align: "center" });
 
             // Title
             doc.setFontSize(14);
-            doc.setTextColor(0);
-            doc.text(`BULLETIN DE PAIE - ${payrollRun.month}/${payrollRun.year}`, 105, 40, { align: "center" });
+            doc.setTextColor(0, 0, 0);
+            doc.text(String(`BULLETIN DE PAIE - ${payrollRun.month}/${payrollRun.year}`), 105, 40, { align: "center" });
 
             // Employee Info Box
-            doc.setDrawColor(200);
-            doc.setFillColor(250);
+            doc.setDrawColor(200, 200, 200);
+            doc.setFillColor(250, 250, 250);
             doc.rect(14, 50, 182, 35, "FD");
 
             doc.setFontSize(10);
-            doc.text("Employé:", 20, 60);
+            doc.text(String("Employé:"), 20, 60);
             doc.setFont("helvetica", "bold");
             doc.text(`${String(emp.firstName)} ${String(emp.lastName)}`, 50, 60);
 
