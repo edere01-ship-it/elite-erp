@@ -72,9 +72,15 @@ export async function action({ request }: ActionFunctionArgs) {
             // Attempt to link to existing User
             const existingUser = await prisma.user.findUnique({ where: { email } });
 
+            // Generate Matricule
+            const count = await prisma.employee.count();
+            const year = new Date().getFullYear().toString().slice(-2);
+            const matricule = `MAT-${year}-${(count + 1).toString().padStart(4, '0')}`;
+
 
             await prisma.employee.create({
                 data: {
+                    matricule,
                     firstName,
                     lastName,
                     email,
@@ -469,7 +475,7 @@ export default function HR() {
     const navigation = useNavigation();
     const submit = useSubmit();
 
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'employees' | 'add_employee' | 'assignments' | 'payroll' | 'transmission'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'employees' | 'add_employee' | 'assignments' | 'payroll' | 'transmission' | 'matricules'>('dashboard');
     const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
 
     const isSubmitting = navigation.state === "submitting" &&
@@ -585,6 +591,18 @@ export default function HR() {
                         Affectations
                     </button>
                     <button
+                        onClick={() => setActiveTab('matricules')}
+                        className={cn(
+                            activeTab === 'matricules'
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
+                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
+                        )}
+                    >
+                        <FileText className={cn("mr-2 h-5 w-5", activeTab === 'matricules' ? "text-blue-500" : "text-gray-400")} />
+                        Matricules
+                    </button>
+                    <button
                         onClick={() => setActiveTab('payroll')}
                         className={cn(
                             activeTab === 'payroll'
@@ -635,6 +653,49 @@ export default function HR() {
                             isSubmitting={isSubmitting}
                             onCancel={() => { setEditingEmployee(null); setActiveTab('employees'); }}
                         />
+                    </div>
+                )}
+
+                {activeTab === 'matricules' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h3 className="text-lg font-medium text-gray-900">Matricules Employés</h3>
+                        </div>
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matricule</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employé</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poste</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {employees.map((emp) => (
+                                    <tr key={emp.id} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                                            {emp.matricule || "N/A"}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <div className="flex items-center gap-3">
+                                                {emp.photo ? (
+                                                    <img src={emp.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
+                                                ) : (
+                                                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+                                                        <span className="text-xs font-bold text-gray-500">
+                                                            {emp.firstName[0]}{emp.lastName[0]}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {emp.firstName} {emp.lastName}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {emp.position}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
 

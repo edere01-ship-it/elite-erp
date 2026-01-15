@@ -73,6 +73,7 @@ model Agency {
 
 model Employee {
   id         String   @id @default(uuid())
+  matricule  String?  @unique
   firstName  String
   lastName   String
   position   String

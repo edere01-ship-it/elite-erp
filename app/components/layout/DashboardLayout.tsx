@@ -114,10 +114,14 @@ const HeaderActions = ({
 
             <div className={`h-6 w-px mx-2 ${isDark ? "bg-gray-600" : "bg-gray-200"}`}></div>
 
-            <div className={`flex items-center gap-2 pl-2 ${isDark ? "" : ""}`}>
-                <div className={`flex h-8 w-8 items-center justify-center rounded-full font-bold text-sm ${isDark ? "bg-gray-600 text-gray-200 border border-gray-500" : "bg-blue-100 text-blue-600"
+            <div className={`flex items-center gap-2 pl-2`}>
+                <div className={`flex h-8 w-8 items-center justify-center rounded-full font-bold text-sm overflow-hidden ${isDark ? "bg-gray-600 text-gray-200 border border-gray-500" : "bg-blue-100 text-blue-600"
                     }`}>
-                    {user.username.substring(0, 2).toUpperCase()}
+                    {user.employee?.photo ? (
+                        <img src={user.employee.photo} alt={user.username} className="h-full w-full object-cover" />
+                    ) : (
+                        user.username.substring(0, 2).toUpperCase()
+                    )}
                 </div>
                 <div className="hidden text-sm md:block">
                     <p className={`font-medium capitalize ${isDark ? "text-gray-100" : "text-gray-700"}`}>

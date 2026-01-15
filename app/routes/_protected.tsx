@@ -19,7 +19,8 @@ export async function loader({ request }: Route.LoaderArgs) {
             username: true,
             email: true,
             role: true,
-            permissions: true
+            permissions: true,
+            employee: { select: { photo: true, matricule: true } }
         }
     });
 
