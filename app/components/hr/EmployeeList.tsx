@@ -42,8 +42,16 @@ export function EmployeeList({ employees, onEdit, onDelete }: EmployeeListProps)
                         <tr key={employee.id} className="hover:bg-gray-50">
                             <td className="whitespace-nowrap px-6 py-4">
                                 <div className="flex items-center">
-                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center">
-                                        <User className="h-6 w-6 text-gray-500" />
+                                    <div className="h-10 w-10 flex-shrink-0 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                                        {employee.photo ? (
+                                            <img
+                                                src={employee.photo}
+                                                alt={`${employee.firstName} ${employee.lastName}`}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        ) : (
+                                            <User className="h-6 w-6 text-gray-500" />
+                                        )}
                                     </div>
                                     <div className="ml-4">
                                         <div className="text-sm font-medium text-gray-900">{employee.firstName} {employee.lastName}</div>

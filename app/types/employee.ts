@@ -14,6 +14,7 @@ export interface Employee {
     agency?: {
         name: string;
     } | null;
+    photo?: string | null;
 }
 
 export interface PayrollRun {
