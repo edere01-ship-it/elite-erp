@@ -143,18 +143,20 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (intent === "reject-payroll") {
         const id = formData.get("id") as string;
+        const reason = formData.get("reason") as string;
         await prisma.payrollRun.update({
             where: { id },
-            data: { status: 'draft' }
+            data: { status: 'draft', rejectionReason: reason }
         });
         return { success: true };
     }
 
     if (intent === "reject-invoice") {
         const id = formData.get("id") as string;
+        const reason = formData.get("reason") as string;
         await prisma.invoice.update({
             where: { id },
-            data: { status: 'draft' }
+            data: { status: 'draft', rejectionReason: reason }
         });
         return { success: true };
     }
@@ -222,10 +224,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
         if (sourceType === 'project') {
             if (action === "reject") {
+                const reason = formData.get("reason") as string;
                 // Revert project to planned/in_progress to allow editing
                 await prisma.constructionProject.update({
                     where: { id },
-                    data: { status: 'planned' }
+                    data: { status: 'planned', rejectionReason: reason }
                 });
             } else {
                 const project = await prisma.constructionProject.findUnique({ where: { id }, select: { managerId: true } });
@@ -248,9 +251,10 @@ export async function action({ request }: ActionFunctionArgs) {
         } else {
             // Standard Expense Report
             if (action === "reject") {
+                const reason = formData.get("reason") as string;
                 await prisma.expenseReport.update({
                     where: { id },
-                    data: { status: 'rejected' }
+                    data: { status: 'rejected', rejectionReason: reason }
                 });
             } else {
                 const report = await prisma.expenseReport.findUnique({ where: { id }, select: { submitterId: true } });

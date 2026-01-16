@@ -10,6 +10,13 @@ interface ValidationManagerProps {
 
 export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExpenses }: ValidationManagerProps) {
     const [activeTab, setActiveTab] = useState<'payroll' | 'revenue' | 'expense'>('payroll');
+    const [rejectionState, setRejectionState] = useState<{
+        isOpen: boolean;
+        itemId: string | null;
+        intent: string;
+        sourceType?: string; // Special case for expenses (project vs expense_report)
+    }>({ isOpen: false, itemId: null, intent: "" });
+
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
 
@@ -17,8 +24,77 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
         return new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
     };
 
+    const openRejectionModal = (itemId: string, intent: string, sourceType?: string) => {
+        setRejectionState({ isOpen: true, itemId, intent, sourceType });
+    };
+
+    const closeRejectionModal = () => {
+        setRejectionState({ isOpen: false, itemId: null, intent: "" });
+    };
+
+    // Auto-close modal on success (when navigation goes back to idle)
+    // Actually, navigation state might flicker, better to rely on logic or user closing.
+    // But standard remix/react-router pattern: if we submitted, and come back, we reset.
+    // Let's just reset on submit for now or let the user see it's done.
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* Rejection Modal */}
+            {rejectionState.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-gray-500/75 transition-opacity" onClick={closeRejectionModal} />
+                    <div className="relative z-10 w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+                        <Form method="post" onSubmit={closeRejectionModal}>
+                            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                        <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                                    </div>
+                                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                        <h3 className="text-base font-semibold leading-6 text-gray-900" id="modal-title">
+                                            Motif du rejet
+                                        </h3>
+                                        <div className="mt-2">
+                                            <p className="text-sm text-gray-500 mb-4">
+                                                Veuillez indiquer la raison du rejet. Cet élément retournera à l'étape précédente pour correction.
+                                            </p>
+                                            <input type="hidden" name="intent" value={rejectionState.intent} />
+                                            <input type="hidden" name="id" value={rejectionState.itemId || ""} />
+                                            {rejectionState.sourceType && <input type="hidden" name="sourceType" value={rejectionState.sourceType} />}
+                                            {/* For expenses, we need action=reject */}
+                                            {rejectionState.intent === "validate-expense" && <input type="hidden" name="action" value="reject" />}
+
+                                            <textarea
+                                                name="reason"
+                                                required
+                                                rows={3}
+                                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm sm:leading-6"
+                                                placeholder="Ex: Erreur de montant, justificatif manquant..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                                <button
+                                    type="submit"
+                                    className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                                >
+                                    Rejeter
+                                </button>
+                                <button
+                                    type="button"
+                                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                    onClick={closeRejectionModal}
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </Form>
+                    </div>
+                </div>
+            )}
+
             <div className="border-b border-gray-200">
                 <nav className="-mb-px flex space-x-8">
                     <button
@@ -91,18 +167,15 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
                                                             Valider (Fin.)
                                                         </button>
                                                     </Form>
-                                                    <Form method="post" className="inline">
-                                                        <input type="hidden" name="intent" value="reject-payroll" />
-                                                        <input type="hidden" name="id" value={run.id} />
-                                                        <button
-                                                            type="submit"
-                                                            disabled={isSubmitting}
-                                                            className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
-                                                            title="Rejeter"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </button>
-                                                    </Form>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openRejectionModal(run.id, "reject-payroll")}
+                                                        disabled={isSubmitting}
+                                                        className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+                                                        title="Rejeter"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </button>
                                                 </>
                                             )}
 
@@ -158,18 +231,15 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
                                                     {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                                                 </button>
                                             </Form>
-                                            <Form method="post" className="inline">
-                                                <input type="hidden" name="intent" value="reject-invoice" />
-                                                <input type="hidden" name="id" value={inv.id} />
-                                                <button
-                                                    type="submit"
-                                                    disabled={isSubmitting}
-                                                    className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                    title="Rejeter (Retour au brouillon)"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </button>
-                                            </Form>
+                                            <button
+                                                type="button"
+                                                onClick={() => openRejectionModal(inv.id, "reject-invoice")}
+                                                disabled={isSubmitting}
+                                                className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                title="Rejeter (Retour au brouillon)"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
                                         </div>
                                     </div>
                                 </li>
@@ -194,31 +264,33 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className="font-bold text-red-600">{formatMoney(exp.amount)}</span>
-                                        <Form method="post" className="flex gap-2">
-                                            <input type="hidden" name="intent" value="validate-expense" />
-                                            <input type="hidden" name="id" value={exp.id} />
-                                            <input type="hidden" name="amount" value={exp.amount} />
-                                            <input type="hidden" name="description" value={exp.description} />
-                                            <input type="hidden" name="sourceType" value={exp.sourceType || 'expense_report'} />
+                                        <div className="flex gap-2">
+                                            <Form method="post" className="inline">
+                                                <input type="hidden" name="intent" value="validate-expense" />
+                                                <input type="hidden" name="id" value={exp.id} />
+                                                <input type="hidden" name="amount" value={exp.amount} />
+                                                <input type="hidden" name="description" value={exp.description} />
+                                                <input type="hidden" name="sourceType" value={exp.sourceType || 'expense_report'} />
+                                                <button
+                                                    type="submit"
+                                                    disabled={isSubmitting}
+                                                    className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                                    title="Approuver"
+                                                >
+                                                    <Check className="h-4 w-4" />
+                                                </button>
+                                            </Form>
                                             <button
-                                                type="submit"
+                                                type="button"
+                                                onClick={() => openRejectionModal(exp.id, "validate-expense", exp.sourceType || 'expense_report')}
+                                                // Note: intent is validate-expense, but modal adds action=reject
                                                 disabled={isSubmitting}
-                                                className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                                                title="Approuver"
-                                            >
-                                                <Check className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                type="submit"
-                                                disabled={isSubmitting}
-                                                name="action"
-                                                value="reject"
                                                 className="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                                 title="Rejeter"
                                             >
                                                 <X className="h-4 w-4" />
                                             </button>
-                                        </Form>
+                                        </div>
                                     </div>
                                 </li>
                             ))

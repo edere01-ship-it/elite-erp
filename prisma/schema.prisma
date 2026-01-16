@@ -39,11 +39,11 @@ model User {
   legalCases            LegalCase[]
 
   employee Employee?
-  
+
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
-  
-  organizedMeetings    Meeting[] @relation("OrganizedMeetings")
+
+  organizedMeetings     Meeting[] @relation("OrganizedMeetings")
   participatingMeetings Meeting[] @relation("MeetingParticipants")
 }
 
@@ -99,23 +99,24 @@ model Employee {
   payrollItems PayrollItem[]
 
   // Identity & Social
-  identityType     String?   // CNI, PASSPORT
+  identityType     String? // CNI, PASSPORT
   identityNumber   String?
-  identityDocument String?   // Path to file
-  photo            String?   // Path to file
+  identityDocument String? // Path to file
+  photo            String? // Path to file
   cmuNumber        String?
   cnpsNumber       String?
 }
 
 model PayrollRun {
-  id          String   @id @default(uuid())
-  month       Int
-  year        Int
-  status      String   @default("draft") // draft, hr_validated, finance_validated, direction_approved, paid
-  totalAmount Float    @default(0)
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  month           Int
+  year            Int
+  status          String   @default("draft") // draft, hr_validated, finance_validated, direction_approved, paid
+  totalAmount     Float    @default(0)
+  notes           String?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   items PayrollItem[]
 
@@ -233,16 +234,17 @@ model Visit {
 // --- Construction ---
 
 model ConstructionProject {
-  id        String    @id @default(uuid())
-  name      String
-  location  String
-  type      String
-  status    String // planned, in_progress, completed, paused
-  budget    Float
-  spent     Float     @default(0)
-  progress  Int       @default(0)
-  startDate DateTime
-  endDate   DateTime?
+  id              String    @id @default(uuid())
+  name            String
+  location        String
+  type            String
+  status          String // planned, in_progress, completed, paused
+  rejectionReason String?
+  budget          Float
+  spent           Float     @default(0)
+  progress        Int       @default(0)
+  startDate       DateTime
+  endDate         DateTime?
 
   managerId String
   manager   User   @relation(fields: [managerId], references: [id])
@@ -286,15 +288,16 @@ model Transaction {
 }
 
 model Invoice {
-  id        String   @id @default(uuid())
-  number    String   @unique
-  type      String // invoice, quote
-  status    String // draft, sent, paid, overdue, agency_validated
-  issueDate DateTime
-  dueDate   DateTime
-  subtotal  Float
-  taxAmount Float
-  total     Float
+  id              String   @id @default(uuid())
+  number          String   @unique
+  type            String // invoice, quote
+  status          String // draft, sent, paid, overdue, agency_validated
+  rejectionReason String?
+  issueDate       DateTime
+  dueDate         DateTime
+  subtotal        Float
+  taxAmount       Float
+  total           Float
 
   clientId String?
   client   Client? @relation(fields: [clientId], references: [id])
@@ -317,13 +320,14 @@ model InvoiceItem {
 }
 
 model ExpenseReport {
-  id          String   @id @default(uuid())
-  amount      Float
-  category    String
-  status      String // pending, agency_validated, approved, rejected
-  date        DateTime
-  description String
-  receiptUrl  String?
+  id              String   @id @default(uuid())
+  amount          Float
+  category        String
+  status          String // pending, agency_validated, approved, rejected
+  rejectionReason String?
+  date            DateTime
+  description     String
+  receiptUrl      String?
 
   submitterId String
   submitter   User                 @relation(fields: [submitterId], references: [id])
@@ -431,19 +435,19 @@ model AuditLog {
 // --- Messaging ---
 
 model Message {
-  id         String   @id @default(uuid())
-  content    String
-  read       Boolean  @default(false)
-  
-  senderId   String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
-  
+  id      String  @id @default(uuid())
+  content String
+  read    Boolean @default(false)
+
+  senderId String
+  sender   User   @relation("SentMessages", fields: [senderId], references: [id])
+
   receiverId String
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
-  
+  receiver   User   @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
   attachmentUrl String?
-  
-  createdAt  DateTime @default(now())
+
+  createdAt DateTime @default(now())
 }
 
 model Meeting {
@@ -452,15 +456,15 @@ model Meeting {
   description String?
   startTime   DateTime
   endTime     DateTime
-  link        String?  // Jitsi Meet URL
+  link        String? // Jitsi Meet URL
   status      String   @default("scheduled") // scheduled, cancelled, completed
-  
+
   organizerId String
-  organizer   User     @relation("OrganizedMeetings", fields: [organizerId], references: [id])
-  
+  organizer   User   @relation("OrganizedMeetings", fields: [organizerId], references: [id])
+
   // Implicit many-to-many for participants
-  participants User[]  @relation("MeetingParticipants")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  participants User[] @relation("MeetingParticipants")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
