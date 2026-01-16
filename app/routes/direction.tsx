@@ -10,6 +10,7 @@ import type { Agency } from "~/types/agency";
 import { AgencyList } from "~/components/agencies/AgencyList";
 import { AgencyForm } from "~/components/agencies/AgencyForm";
 import { AgencyPerformanceDashboard } from "~/components/agencies/AgencyPerformanceDashboard";
+import { notifyAgencyManagers, notifyFinance } from "~/services/notification.server";
 
 import {
     BarChart,
@@ -79,29 +80,70 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (intent === "validate_payroll") {
         const id = formData.get("id") as string;
-        await prisma.payrollRun.update({
+        const payroll = await prisma.payrollRun.update({
             where: { id },
-            data: { status: 'direction_approved' }
+            data: { status: 'direction_approved' },
+            include: { agency: true }
         });
+
+        await notifyFinance(
+            "Paie Approuvée par Direction",
+            `La paie de ${payroll.month}/${payroll.year} pour l'agence ${payroll.agency?.name} a été approuvée par la Direction et est prête pour paiement.`,
+            "success",
+            "/finance"
+        );
+
+        if (payroll.agencyId) {
+            await notifyAgencyManagers(
+                payroll.agencyId,
+                "Paie Approuvée",
+                `Votre paie de ${payroll.month}/${payroll.year} a été validée par la Direction.`,
+                "success",
+                "/agency/validations"
+            );
+        }
+
         return { success: true };
     }
 
     if (intent === "reject_payroll") {
         const id = formData.get("id") as string;
         const reason = formData.get("reason") as string;
-        await prisma.payrollRun.update({
+        const payroll = await prisma.payrollRun.update({
             where: { id },
-            data: { status: 'pending_agency', rejectionReason: reason }
+            data: { status: 'pending_agency', rejectionReason: reason },
+            include: { agency: true }
         });
+
+        if (payroll.agencyId) {
+            await notifyAgencyManagers(
+                payroll.agencyId,
+                "Paie Rejetée par Direction",
+                `Votre paie de ${payroll.month}/${payroll.year} a été rejetée par la Direction. Motif: ${reason}`,
+                "error",
+                "/agency/validations"
+            );
+        }
         return { success: true };
     }
 
     if (intent === "validate_employee") {
         const id = formData.get("id") as string;
-        await prisma.employee.update({
+        const employee = await prisma.employee.update({
             where: { id },
-            data: { status: 'active' }
+            data: { status: 'active' },
+            include: { agency: true }
         });
+
+        if (employee.agencyId) {
+            await notifyAgencyManagers(
+                employee.agencyId,
+                "Recrutement Validé",
+                `Le recrutement de ${employee.firstName} ${employee.lastName} a été validé.`,
+                "success",
+                "/agency/employees"
+            );
+        }
         return { success: true };
     }
 

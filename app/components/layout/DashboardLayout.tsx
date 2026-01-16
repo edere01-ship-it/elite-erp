@@ -28,7 +28,7 @@ const HeaderActions = ({
 }: {
     isDark?: boolean;
     user: any;
-    setIsMessengerOpen: (v: boolean) => void;
+    setIsMessengerOpen: React.Dispatch<React.SetStateAction<boolean>>;
     setIsReportModalOpen: (v: boolean) => void;
     isDashboard: boolean;
 }) => {
@@ -83,7 +83,7 @@ const HeaderActions = ({
     return (
         <div className="flex items-center gap-2">
             <button
-                onClick={() => setIsMessengerOpen(true)}
+                onClick={() => setIsMessengerOpen(prev => !prev)}
                 className={`rounded-full p-2 transition-colors relative group ${isDark
                     ? "hover:bg-white/10 text-gray-300 hover:text-white"
                     : "hover:bg-gray-100 text-gray-600 hover:text-gray-900"

@@ -1,4 +1,5 @@
 import { prisma } from "~/db.server";
+import { notifyFinance, notifyDirection, broadcastNotificationByPermission } from "~/services/notification.server";
 
 export type AgencyPendingItems = {
     invoices: Awaited<ReturnType<typeof getAgencyPendingInvoices>>;
@@ -120,19 +121,36 @@ export async function getAgencyProperties(agencyId: string) {
 }
 
 export async function validateByAgency(itemId: string, type: 'invoice' | 'expense' | 'transaction' | 'payroll' | 'employee', validatorId: string) {
-    const targetStatus = "agency_validated";
-
     switch (type) {
         case 'invoice':
-            return prisma.invoice.update({
+            // Agence Manager approves -> Sent to Finance
+            const inv = await prisma.invoice.update({
                 where: { id: itemId },
-                data: { status: targetStatus }
+                data: { status: 'sent' },
+                select: { number: true, agency: { select: { name: true } } }
             });
+            await notifyFinance(
+                "Nouvelle Facture Agence",
+                `La facture #${inv.number} de l'agence ${inv.agency?.name} a été envoyée pour traitement.`,
+                "info",
+                "/finance"
+            );
+            return inv;
         case 'expense':
-            return prisma.expenseReport.update({
+            // Logic: If small amount -> approved, else -> pending_finance?
+            // For now, assuming auto-approval rule or user has rights.
+            const exp = await prisma.expenseReport.update({
                 where: { id: itemId },
-                data: { status: targetStatus }
+                data: { status: 'approved' },
+                select: { description: true, amount: true, agency: { select: { name: true } } }
             });
+            await notifyFinance(
+                "Dépense Agence Approuvée",
+                `Dépense validée par l'agence ${exp.agency?.name}: ${exp.description} (${exp.amount.toLocaleString()} CFA). Prête pour règlement.`,
+                "success",
+                "/finance"
+            );
+            return exp;
         case 'transaction':
             return prisma.transaction.update({
                 where: { id: itemId },
@@ -142,17 +160,33 @@ export async function validateByAgency(itemId: string, type: 'invoice' | 'expens
                 }
             });
         case 'payroll':
-            // Level 1 Validation: Agency -> General Direction
-            return prisma.payrollRun.update({
+            // Agency Val -> Finance
+            const pay = await prisma.payrollRun.update({
                 where: { id: itemId },
-                data: { status: "pending_general" }
+                data: { status: "pending_general" },
+                select: { month: true, year: true, agency: { select: { name: true } } }
             });
+            await notifyFinance(
+                "Validation Paie Agence",
+                `La paie ${pay.month}/${pay.year} de l'agence ${pay.agency?.name} a été validée par le manager et attend votre validation.`,
+                "info",
+                "/finance"
+            );
+            return pay;
         case 'employee':
             // Level 1 Validation: Agency -> General Direction
-            return prisma.employee.update({
+            const emp = await prisma.employee.update({
                 where: { id: itemId },
-                data: { status: "pending_general" }
+                data: { status: "pending_general" },
+                select: { firstName: true, lastName: true, agency: { select: { name: true } } }
             });
+            await notifyDirection(
+                "Nouveau Recrutement à Valider",
+                `Recrutement de ${emp.firstName} ${emp.lastName} (Agence ${emp.agency?.name}) en attente de validation finale.`,
+                "info",
+                "/direction"
+            );
+            return emp;
         default:
             throw new Error(`Unknown validation type: ${type}`);
     }

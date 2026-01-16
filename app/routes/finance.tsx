@@ -12,6 +12,7 @@ import { InvoiceManager } from "~/components/finance/InvoiceManager";
 import { ValidationManager } from "~/components/finance/ValidationManager";
 import { cn } from "~/lib/utils";
 import { PERMISSIONS } from "~/utils/permissions";
+import { notifyAgencyManagers, notifyDirection } from "~/services/notification.server";
 import { requirePermission, hasPermission } from "~/utils/permissions.server";
 import { logModuleAccess } from "~/services/it.server";
 import { getValidationHistory } from "~/services/direction.server";
@@ -145,20 +146,39 @@ export async function action({ request }: ActionFunctionArgs) {
     if (intent === "reject-payroll") {
         const id = formData.get("id") as string;
         const reason = formData.get("reason") as string;
-        await prisma.payrollRun.update({
+        const payroll = await prisma.payrollRun.update({
             where: { id },
-            data: { status: 'pending_general', rejectionReason: reason }
+            data: { status: 'pending_general', rejectionReason: reason }, // Sent to Direction for review before going back to agency
+            include: { agency: true }
         });
+
+        await notifyDirection(
+            "Paie Rejetée par Finance",
+            `La paie de ${payroll.month}/${payroll.year} pour l'agence ${payroll.agency?.name} a été rejetée par la Finance. Motif: ${reason}`,
+            "warning",
+            "/direction"
+        );
         return { success: true };
     }
 
     if (intent === "reject-invoice") {
         const id = formData.get("id") as string;
         const reason = formData.get("reason") as string;
-        await prisma.invoice.update({
+        const invoice = await prisma.invoice.update({
             where: { id },
-            data: { status: 'draft', rejectionReason: reason }
+            data: { status: 'draft', rejectionReason: reason },
+            include: { agency: true }
         });
+
+        if (invoice.agencyId) {
+            await notifyAgencyManagers(
+                invoice.agencyId,
+                "Facture Rejetée",
+                `La facture #${invoice.number} a été rejetée. Motif: ${reason}`,
+                "error",
+                "/agency/validations"
+            );
+        }
         return { success: true };
     }
 

@@ -30,3 +30,11 @@ export async function requirePermission(request: Request, permission: string) {
 
     return user;
 }
+export async function requireUserId(request: Request) {
+    const session = await getSession(request.headers.get("Cookie"));
+    const userId = session.get("userId");
+    if (!userId) {
+        throw redirect("/login");
+    }
+    return userId;
+}
