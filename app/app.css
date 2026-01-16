@@ -3,12 +3,21 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    
-  /* Vibrant Palette */
-  --color-primary: #10B981; /* Emerald 500 - Bright Green */
-  --color-primary-hover: #059669; /* Emerald 600 */
-  --color-secondary: #F97316; /* Orange 500 - Bright Orange */
-  --color-secondary-hover: #EA580C; /* Orange 600 */
+
+  /* Vibrant Palette - Green, White, Orange */
+  --color-primary: #059669;
+  /* Emerald 600 - Deep Vibrant Green */
+  --color-primary-hover: #047857;
+  /* Emerald 700 */
+  --color-secondary: #F97316;
+  /* Orange 500 - Bright Orange */
+  --color-secondary-hover: #EA580C;
+  /* Orange 600 */
+  --color-accent: #FFFFFF;
+  /* White */
+
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
 }
 
 :root {
@@ -19,7 +28,8 @@
 
 html,
 body {
-  @apply bg-slate-50 text-slate-800; /* Softer background to make white pop */
+  @apply bg-slate-50 text-slate-800;
+  /* Softer background to make white pop */
 }
 
 /* Glassmorphism Utility */
@@ -34,20 +44,27 @@ body {
 .glass-button {
   background: white;
   backdrop-filter: blur(5px);
-  border: 1px solid rgba(255,255,255,0.5);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
 
 .glass-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Animations */
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in-up {
@@ -59,9 +76,11 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   @apply bg-slate-200 rounded-full hover:bg-slate-300;
 }

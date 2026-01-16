@@ -213,8 +213,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
             <ReportIssueModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
             <MessengerPanel isOpen={isMessengerOpen} onClose={() => setIsMessengerOpen(false)} />
 
-            {/* Immersive Header - Vibrant Gradient */}
-            <header className="flex h-16 items-center justify-between px-6 text-white shadow-lg z-20 bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-500">
+            {/* Immersive Header - Vibrant Green Gradient */}
+            <header className="flex h-16 items-center justify-between px-6 text-white shadow-lg z-20 bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500">
                 <div className="flex items-center gap-6">
                     {/* Logo Area */}
                     <div className="flex items-center gap-2">

@@ -52,7 +52,7 @@ export function Sidebar({ user }: SidebarProps) {
     return (
         <div className="flex h-full w-64 flex-col bg-white border-r border-slate-200 shadow-sm relative z-20">
             {/* Logo Area with Gradient/Glass Effect */}
-            <div className="flex h-16 items-center px-6 border-b border-slate-100 bg-gradient-to-r from-emerald-500 to-teal-400">
+            <div className="flex h-16 items-center px-6 border-b border-slate-100 bg-gradient-to-r from-emerald-600 to-emerald-500">
                 <div className="flex items-center gap-2 font-bold text-xl text-white">
                     <div className="p-1 bg-white/20 rounded-lg backdrop-blur-sm">
                         <Home className="h-6 w-6 text-white" />

@@ -1,5 +1,5 @@
-import { type LoaderFunctionArgs, type ActionFunctionArgs, json } from "react-router";
-import { requireUserId } from "~/utils/session.server";
+import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
+import { requireUserId } from "~/utils/auth.server";
 import { getUserNotifications, getUnreadNotificationCount, markNotificationAsRead } from "~/services/notification.server";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -9,7 +9,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         getUnreadNotificationCount(userId)
     ]);
 
-    return json({ notifications, unreadCount });
+    return { notifications, unreadCount };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -21,9 +21,9 @@ export async function action({ request }: ActionFunctionArgs) {
         const id = formData.get("id") as string;
         if (id) {
             await markNotificationAsRead(id);
-            return json({ success: true });
+            return { success: true };
         }
     }
 
-    return json({ error: "Invalid intent" });
+    return { error: "Invalid intent" };
 }
