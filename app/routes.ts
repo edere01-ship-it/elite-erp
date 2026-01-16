@@ -27,5 +27,7 @@ export default [
     route("logout", "routes/logout.tsx"),
     route("api/tickets", "routes/api.tickets.tsx"),
     route("api/messages", "routes/api.messages.ts"),
+    route("api/notifications", "routes/api.notifications.tsx"),
+    route("api/sse", "routes/api.sse.ts"),
 
 ] satisfies RouteConfig;

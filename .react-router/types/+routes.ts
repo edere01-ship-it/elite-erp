@@ -80,12 +80,18 @@ type Pages = {
   "/api/messages": {
     params: {};
   };
+  "/api/notifications": {
+    params: {};
+  };
+  "/api/sse": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages";
+    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages" | "/api/notifications" | "/api/sse";
   };
   "routes/_protected.tsx": {
     id: "routes/_protected";
@@ -183,6 +189,14 @@ type RouteFiles = {
     id: "routes/api.messages";
     page: "/api/messages";
   };
+  "routes/api.notifications.tsx": {
+    id: "routes/api.notifications";
+    page: "/api/notifications";
+  };
+  "routes/api.sse.ts": {
+    id: "routes/api.sse";
+    page: "/api/sse";
+  };
 };
 
 type RouteModules = {
@@ -211,4 +225,6 @@ type RouteModules = {
   "routes/logout": typeof import("./app/routes/logout.tsx");
   "routes/api.tickets": typeof import("./app/routes/api.tickets.tsx");
   "routes/api.messages": typeof import("./app/routes/api.messages.ts");
+  "routes/api.notifications": typeof import("./app/routes/api.notifications.tsx");
+  "routes/api.sse": typeof import("./app/routes/api.sse.ts");
 };
