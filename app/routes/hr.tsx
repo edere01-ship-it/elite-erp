@@ -1,5 +1,5 @@
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
-import { Link, useLoaderData, useNavigation, useSubmit, redirect, useActionData } from "react-router";
+import { Link, useLoaderData, useNavigation, useSubmit, redirect, useActionData, Form } from "react-router";
 import { useState, useEffect } from "react";
 import { Users, FileText, Plus, UserPlus, Send, LayoutDashboard, Briefcase, Printer } from "lucide-react";
 import { EmployeeList } from "~/components/hr/EmployeeList";
@@ -373,7 +373,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Formatting Payroll Run for UI
     const formattedPayrollRun = payrollRun ? {
         ...payrollRun,
-        status: payrollRun.status as 'draft' | 'hr_validated' | 'finance_validated' | 'direction_approved' | 'paid',
+        status: payrollRun.status as 'draft' | 'hr_validated' | 'finance_validated' | 'direction_approved' | 'paid' | 'pending_agency' | 'pending_general' | 'agency_rejected',
         createdAt: payrollRun.createdAt.toISOString(),
         items: payrollRun.items.map(item => ({
             ...item,
@@ -398,7 +398,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Pending validations (Payroll runs that are Draft or HR Validated but not Paid)
     const pendingRuns = await prisma.payrollRun.count({
-        where: { status: { in: ['draft', 'hr_validated', 'finance_validated'] } }
+        where: { status: { in: ['draft', 'hr_validated', 'finance_validated', 'agency_rejected'] } }
     });
 
     const pendingEmployees = await prisma.employee.count({
@@ -765,12 +765,44 @@ export default function HR() {
                                             <Send className="h-4 w-4" /> Validé & Transmettre
                                         </button>
                                     )}
-                                    {payrollRun.status !== 'draft' && (
+                                    {payrollRun.status !== 'draft' && payrollRun.status !== 'agency_rejected' && (
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                            Déjà transmis / Validé
+                                            Déjà transmis / Validé ({payrollRun.status})
                                         </span>
                                     )}
                                 </div>
+
+                                {/* ALERTE REJET AGENCE */}
+                                {payrollRun.status === 'agency_rejected' && (
+                                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                                        <div className="flex items-start">
+                                            <div className="flex-shrink-0">
+                                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                </svg>
+                                            </div>
+                                            <div className="ml-3">
+                                                <h3 className="text-sm font-medium text-red-800">URGENT : Paie Rejetée par l'Agence</h3>
+                                                <div className="mt-2 text-sm text-red-700">
+                                                    <p>La transmission a été rejetée. Motif : <strong>{(payrollRun as any).rejectionReason || "Non spécifié"}</strong></p>
+                                                    <p className="mt-2">Veuillez corriger et soumettre à nouveau.</p>
+                                                </div>
+                                                <div className="mt-4">
+                                                    <Form method="post">
+                                                        <input type="hidden" name="intent" value="revert_payroll_to_draft" />
+                                                        <input type="hidden" name="runId" value={payrollRun.id} />
+                                                        <button
+                                                            type="submit"
+                                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                        >
+                                                            Réinitialiser en Brouillon & Corriger
+                                                        </button>
+                                                    </Form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="text-sm text-gray-500">
                                     * La validation verrouille la fiche de paie et notifie le service financier.
                                 </div>

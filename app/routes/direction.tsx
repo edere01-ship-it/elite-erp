@@ -2,7 +2,7 @@
 import { useLoaderData, redirect, Link, type LoaderFunctionArgs, type MetaFunction, type ActionFunctionArgs, useSubmit, Form, useNavigation } from "react-router";
 import { prisma } from "~/db.server";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, CheckCircle, TrendingUp, Building, Users, Wallet, Briefcase, Plus } from "lucide-react";
+import { LayoutDashboard, CheckCircle, TrendingUp, Building, Users, Wallet, Briefcase, Plus, AlertCircle, X } from "lucide-react";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { cn } from "~/lib/utils";
@@ -82,6 +82,16 @@ export async function action({ request }: ActionFunctionArgs) {
         await prisma.payrollRun.update({
             where: { id },
             data: { status: 'direction_approved' }
+        });
+        return { success: true };
+    }
+
+    if (intent === "reject_payroll") {
+        const id = formData.get("id") as string;
+        const reason = formData.get("reason") as string;
+        await prisma.payrollRun.update({
+            where: { id },
+            data: { status: 'pending_agency', rejectionReason: reason }
         });
         return { success: true };
     }
@@ -180,6 +190,21 @@ export default function DirectionDashboard() {
     const { stats, validations, validationHistory, financeStats, agencyPerformance, chartData, recentDocuments, agencies } = useLoaderData<typeof loader>();
     const [activeTab, setActiveTab] = useState("dashboard");
 
+    // Rejection Modal State
+    const [rejectionState, setRejectionState] = useState<{
+        isOpen: boolean;
+        itemId: string | null;
+        intent: string;
+    }>({ isOpen: false, itemId: null, intent: "" });
+
+    const openRejectionModal = (itemId: string, intent: string) => {
+        setRejectionState({ isOpen: true, itemId, intent });
+    };
+
+    const closeRejectionModal = () => {
+        setRejectionState({ isOpen: false, itemId: null, intent: "" });
+    };
+
     // Agency Management State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [editingAgency, setEditingAgency] = useState<Agency | null>(null);
@@ -215,7 +240,59 @@ export default function DirectionDashboard() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+            {/* Rejection Modal */}
+            {rejectionState.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-gray-500/75 transition-opacity" onClick={closeRejectionModal} />
+                    <div className="relative z-10 w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+                        <Form method="post" onSubmit={closeRejectionModal}>
+                            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                        <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                                    </div>
+                                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+                                        <h3 className="text-base font-semibold leading-6 text-gray-900" id="modal-title">
+                                            Motif du rejet
+                                        </h3>
+                                        <div className="mt-2">
+                                            <p className="text-sm text-gray-500 mb-4">
+                                                Le document sera renvoyé à l'étape précédente (Agence/RH).
+                                            </p>
+                                            <input type="hidden" name="intent" value={rejectionState.intent} />
+                                            <input type="hidden" name="id" value={rejectionState.itemId || ""} />
+                                            <textarea
+                                                name="reason"
+                                                required
+                                                rows={3}
+                                                className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm sm:leading-6"
+                                                placeholder="Indiquez la raison du rejet..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                                <button
+                                    type="submit"
+                                    className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                                >
+                                    Rejeter
+                                </button>
+                                <button
+                                    type="button"
+                                    className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                    onClick={closeRejectionModal}
+                                >
+                                    Annuler
+                                </button>
+                            </div>
+                        </Form>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Tableau de bord Direction Générale</h1>
@@ -398,16 +475,24 @@ export default function DirectionDashboard() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 {item.type === 'Paie' ? (
-                                                    <Form method="post">
-                                                        <input type="hidden" name="intent" value="validate_payroll" />
-                                                        <input type="hidden" name="id" value={item.id} />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Form method="post" className="inline">
+                                                            <input type="hidden" name="intent" value="validate_payroll" />
+                                                            <input type="hidden" name="id" value={item.id} />
+                                                            <button
+                                                                type="submit"
+                                                                className="text-blue-600 hover:text-blue-900 font-semibold bg-blue-50 px-3 py-1 rounded-md"
+                                                            >
+                                                                Valider
+                                                            </button>
+                                                        </Form>
                                                         <button
-                                                            type="submit"
-                                                            className="text-blue-600 hover:text-blue-900 font-semibold bg-blue-50 px-3 py-1 rounded-md"
+                                                            onClick={() => openRejectionModal(item.id, "reject_payroll")}
+                                                            className="text-red-600 hover:text-red-900 font-semibold bg-red-50 px-3 py-1 rounded-md"
                                                         >
-                                                            Valider
+                                                            Rejeter
                                                         </button>
-                                                    </Form>
+                                                    </div>
                                                 ) : item.type === 'Recrutement' ? (
                                                     <Form method="post">
                                                         <input type="hidden" name="intent" value="validate_employee" />

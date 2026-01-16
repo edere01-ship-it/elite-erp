@@ -146,7 +146,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const reason = formData.get("reason") as string;
         await prisma.payrollRun.update({
             where: { id },
-            data: { status: 'draft', rejectionReason: reason }
+            data: { status: 'pending_general', rejectionReason: reason }
         });
         return { success: true };
     }

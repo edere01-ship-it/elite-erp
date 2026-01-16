@@ -178,7 +178,7 @@ export async function rejectByAgency(itemId: string, type: 'invoice' | 'expense'
         case 'payroll':
             return prisma.payrollRun.update({
                 where: { id: itemId },
-                data: { status: 'draft' }
+                data: { status: 'agency_rejected' }
             });
         case 'employee':
             return prisma.employee.update({
