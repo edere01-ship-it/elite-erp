@@ -19,6 +19,8 @@ const CATEGORY_MAP: Record<string, string> = {
     invoices: "Factures",
     plans: "Plans",
     hr: "Ressources Humaines",
+    hr_photos: "Photos Employés",
+    hr_identity: "Identité",
     legal: "Juridique",
     marketing: "Marketing",
     other: "Divers"
@@ -29,6 +31,8 @@ const FOLDERS: Folder[] = [
     { id: "cat-invoices", name: "Factures", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Factures" },
     { id: "cat-plans", name: "Plans", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Plans" },
     { id: "cat-hr", name: "Ressources Humaines", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/RH" },
+    { id: "cat-hr-photos", name: "Photos Employés", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Photos" }, // New
+    { id: "cat-hr-identity", name: "Identité", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Identite" }, // New
     { id: "cat-legal", name: "Juridique", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Juridique" },
     { id: "cat-marketing", name: "Marketing", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Marketing" },
     { id: "cat-other", name: "Divers", type: "folder", itemCount: 0, updatedAt: new Date().toISOString(), path: "/Divers" },

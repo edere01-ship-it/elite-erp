@@ -42,13 +42,35 @@ export async function createDocument({
     ownerId: string;
     fileBuffer: Buffer;
 }) {
-    await ensureUploadDir();
+    // Basic mapping of category to folder path
+    let folder = "others";
+    if (category === "contracts") folder = "contracts";
+    if (category === "invoices") folder = "invoices";
+    if (category === "hr") folder = "hr";
+    if (category === "hr_photos") folder = "hr/photos"; // New subfolder
+    if (category === "hr_identity") folder = "hr/identity"; // New subfolder
+    if (category === "legal") folder = "legal";
+    if (category === "marketing") folder = "marketing";
 
-    // Generate unique filename to avoid collisions
+    // Dest Dir
+    const destDir = path.join(process.cwd(), "public", "uploads", "documents", folder);
+
+    // Ensure dir exists
+    try {
+        await fs.access(destDir);
+    } catch {
+        await fs.mkdir(destDir, { recursive: true });
+    }
+
+    // Generate unique filename
     const ext = path.extname(name);
-    const uniqueName = `${path.basename(name, ext)}_${randomUUID()}${ext}`;
-    const filePath = path.join(UPLOAD_DIR, uniqueName);
-    const publicPath = `/uploads/documents/${uniqueName}`;
+    // Sanitize filename
+    const safeName = path.basename(name, ext).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const uniqueName = `${safeName}_${randomUUID()}${ext}`;
+
+    const filePath = path.join(destDir, uniqueName);
+    // Public URL path (important: use posix style slashes for URL)
+    const publicPath = `/uploads/documents/${folder}/${uniqueName}`.replace(/\\/g, '/');
 
     // Write file to disk
     await fs.writeFile(filePath, fileBuffer);
@@ -67,7 +89,7 @@ export async function createDocument({
             name,
             type: simpleType, // storing the UI-friendly type
             size,
-            category, // e.g., 'contracts', 'invoices'
+            category, // e.g., 'contracts', 'invoices', 'hr_photos'
             path: publicPath,
             ownerId,
         },

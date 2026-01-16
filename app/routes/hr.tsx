@@ -12,6 +12,9 @@ import { cn } from "~/lib/utils";
 import type { Route } from "./+types/hr";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
+import { prisma } from "~/db.server";
+import { createDocument } from "~/services/documents.server";
+import { uploadFile } from "~/utils/upload.server";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -63,11 +66,36 @@ export async function action({ request }: ActionFunctionArgs) {
             let identityDocPath = null;
 
             if (photoFile && photoFile.size > 0 && photoFile.name) {
-                photoPath = await uploadFile(photoFile, "employees/photos");
+                // Determine size string
+                const sizeMb = photoFile.size / (1024 * 1024);
+                const sizeStr = sizeMb < 1 ? `${(photoFile.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+                const buffer = Buffer.from(await photoFile.arrayBuffer());
+
+                const doc = await createDocument({
+                    name: `Photo_${firstName}_${lastName}_${photoFile.name}`,
+                    type: "image",
+                    size: sizeStr,
+                    category: "hr_photos",
+                    ownerId: userId,
+                    fileBuffer: buffer
+                });
+                photoPath = doc.path;
             }
 
             if (identityDocFile && identityDocFile.size > 0 && identityDocFile.name) {
-                identityDocPath = await uploadFile(identityDocFile, "employees/identities");
+                const sizeMb = identityDocFile.size / (1024 * 1024);
+                const sizeStr = sizeMb < 1 ? `${(identityDocFile.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+                const buffer = Buffer.from(await identityDocFile.arrayBuffer());
+
+                const doc = await createDocument({
+                    name: `ID_${firstName}_${lastName}_${identityDocFile.name}`,
+                    type: "pdf", // Assumed or auto-detected inside
+                    size: sizeStr,
+                    category: "hr_identity",
+                    ownerId: userId,
+                    fileBuffer: buffer
+                });
+                identityDocPath = doc.path;
             }
 
             // Attempt to link to existing User
@@ -141,11 +169,35 @@ export async function action({ request }: ActionFunctionArgs) {
         };
 
         if (photoFile && photoFile.size > 0 && photoFile.name) {
-            updateData.photo = await uploadFile(photoFile, "employees/photos");
+            const sizeMb = photoFile.size / (1024 * 1024);
+            const sizeStr = sizeMb < 1 ? `${(photoFile.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+            const buffer = Buffer.from(await photoFile.arrayBuffer());
+
+            const doc = await createDocument({
+                name: `Photo_${updateData.firstName}_${updateData.lastName}_${photoFile.name}`,
+                type: "image",
+                size: sizeStr,
+                category: "hr_photos",
+                ownerId: userId,
+                fileBuffer: buffer
+            });
+            updateData.photo = doc.path;
         }
 
         if (identityDocFile && identityDocFile.size > 0 && identityDocFile.name) {
-            updateData.identityDocument = await uploadFile(identityDocFile, "employees/identities");
+            const sizeMb = identityDocFile.size / (1024 * 1024);
+            const sizeStr = sizeMb < 1 ? `${(identityDocFile.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+            const buffer = Buffer.from(await identityDocFile.arrayBuffer());
+
+            const doc = await createDocument({
+                name: `ID_${updateData.firstName}_${updateData.lastName}_${identityDocFile.name}`,
+                type: "other",
+                size: sizeStr,
+                category: "hr_identity",
+                ownerId: userId,
+                fileBuffer: buffer
+            });
+            updateData.identityDocument = doc.path;
         }
 
         // Attempt to link to existing User if email changed or not linked
