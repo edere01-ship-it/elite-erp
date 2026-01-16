@@ -14,6 +14,7 @@ import { cn } from "~/lib/utils";
 import { PERMISSIONS } from "~/utils/permissions";
 import { requirePermission, hasPermission } from "~/utils/permissions.server";
 import { logModuleAccess } from "~/services/it.server";
+import { getValidationHistory } from "~/services/direction.server";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -434,6 +435,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const canValidate = userId ? await hasPermission(userId, PERMISSIONS.FINANCE_VALIDATE) : false;
     const canCreate = userId ? await hasPermission(userId, PERMISSIONS.FINANCE_CREATE) : false;
 
+    const validationHistory = await getValidationHistory();
+
     return {
         transactions,
         invoices,
@@ -442,6 +445,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         pendingPayrolls: pendingPayrollList,
         pendingInvoices: pendingInvoicesList,
         pendingExpenses: pendingExpenseList,
+        validationHistory,
         canValidate,
         canCreate
     };
@@ -456,6 +460,7 @@ export default function Finance() {
         pendingPayrolls,
         pendingInvoices,
         pendingExpenses,
+        validationHistory,
         canValidate,
         canCreate
     } = useLoaderData<typeof loader>();
@@ -592,6 +597,7 @@ export default function Finance() {
                         pendingPayrolls={pendingPayrolls}
                         pendingInvoices={pendingInvoices}
                         pendingExpenses={pendingExpenses}
+                        validationHistory={validationHistory}
                     />
                 )}
 

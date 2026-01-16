@@ -1,6 +1,6 @@
 import { redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { Form, useLoaderData, useNavigation } from "react-router";
-import { getAgencyPendingInvoices, getAgencyPendingExpenses, getAgencyPendingTransactions, getAgencyPendingPayrolls, getAgencyPendingEmployees, validateByAgency, rejectByAgency } from "~/services/agency.server";
+import { getAgencyPendingInvoices, getAgencyPendingExpenses, getAgencyPendingTransactions, getAgencyPendingPayrolls, getAgencyPendingEmployees, validateByAgency, rejectByAgency, getAgencyValidationHistory } from "~/services/agency.server";
 import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { prisma } from "~/db.server";
@@ -18,20 +18,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
         throw new Response("User not assigned to an agency", { status: 403 });
     }
 
-    const { invoices, expenses, transactions, payrolls, employees } = await getAgencyData(employee.agencyId);
+    const { invoices, expenses, transactions, payrolls, employees, validationHistory } = await getAgencyData(employee.agencyId);
 
-    return { invoices, expenses, transactions, payrolls, employees, agencyId: employee.agencyId };
+    return { invoices, expenses, transactions, payrolls, employees, validationHistory, agencyId: employee.agencyId };
 }
 
 async function getAgencyData(agencyId: string) {
-    const [invoices, expenses, transactions, payrolls, employees] = await Promise.all([
+    const [invoices, expenses, transactions, payrolls, employees, validationHistory] = await Promise.all([
         getAgencyPendingInvoices(agencyId),
         getAgencyPendingExpenses(agencyId),
         getAgencyPendingTransactions(agencyId),
         getAgencyPendingPayrolls(agencyId),
-        getAgencyPendingEmployees(agencyId)
+        getAgencyPendingEmployees(agencyId),
+        getAgencyValidationHistory(agencyId)
     ]);
-    return { invoices, expenses, transactions, payrolls, employees };
+    return { invoices, expenses, transactions, payrolls, employees, validationHistory };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -55,7 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function AgencyValidations() {
-    const { invoices, expenses, transactions, payrolls, employees } = useLoaderData<typeof loader>();
+    const { invoices, expenses, transactions, payrolls, employees, validationHistory } = useLoaderData<typeof loader>();
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
 
@@ -231,6 +232,61 @@ export default function AgencyValidations() {
                                 </li>
                             ))}
                         </ul>
+                    </div>
+                )}
+            </div>
+            {/* Validation History Section */}
+            <div>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800 flex items-center gap-2">
+                    <Check className="w-5 h-5" /> Historique des Validations
+                </h2>
+                {validationHistory.length === 0 ? (
+                    <p className="text-gray-500 italic">Aucun historique récent.</p>
+                ) : (
+                    <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-100">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {validationHistory.map((item: any, idx: number) => (
+                                    <tr key={`${item.id}-${idx}`} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {new Date(item.date).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${item.type === 'Paie' ? 'bg-purple-50 text-purple-700 ring-purple-600/20' :
+                                                item.type === 'Dépense' ? 'bg-orange-50 text-orange-700 ring-orange-600/20' :
+                                                    item.type === 'Facture' ? 'bg-blue-50 text-blue-700 ring-blue-600/20' :
+                                                        'bg-gray-50 text-gray-600 ring-gray-500/10'
+                                                }`}>
+                                                {item.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            {item.description} <span className="text-gray-500 text-xs">({item.details})</span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                            {formatCurrency(item.amount)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${item.status.includes('Validé') ? 'bg-green-50 text-green-700 ring-green-600/20' :
+                                                item.status.includes('Rejeté') ? 'bg-red-50 text-red-700 ring-red-600/20' :
+                                                    'bg-yellow-50 text-yellow-800 ring-yellow-600/20'
+                                                }`}>
+                                                {item.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 )}
             </div>

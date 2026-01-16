@@ -152,25 +152,25 @@ export async function getValidationHistory() {
         prisma.expenseReport.findMany({
             where: { status: { in: ["approved", "rejected"] } },
             include: { submitter: true },
-            take: 20,
+            take: 50,
             orderBy: { date: "desc" }
         }),
         prisma.payrollRun.findMany({
-            where: { status: { in: ["direction_approved", "paid"] } },
-            take: 20,
+            where: { status: { in: ["direction_approved", "paid", "pending_agency"] } }, // pending_agency = Rejected by Direction (sent back)
+            take: 50,
             orderBy: { updatedAt: "desc" }
         }),
         prisma.transaction.findMany({
             where: { status: { in: ["completed", "cancelled"] }, type: "expense" },
             include: { recorder: true },
-            take: 20,
+            take: 50,
             orderBy: { date: "desc" }
         }),
         prisma.employee.findMany({
             // Simple proxy for "Assigned": Employees with an agency, sorted by update
             where: { NOT: { agencyId: null } },
             include: { agency: true },
-            take: 20,
+            take: 50,
             orderBy: { updatedAt: "desc" }
         })
     ]);
@@ -189,7 +189,7 @@ export async function getValidationHistory() {
             type: "Paie",
             emitter: "RH",
             amount: p.totalAmount,
-            status: "Validé",
+            status: p.status === "direction_approved" || p.status === "paid" ? "Validé" : "Rejeté (Renvoyé Agence)",
             date: p.updatedAt
         })),
         ...historyTransactions.map(t => ({
@@ -209,7 +209,7 @@ export async function getValidationHistory() {
             date: e.updatedAt,
             details: `${e.firstName} ${e.lastName} -> ${e.agency?.name}`
         }))
-    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 50); // increased limit
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // No slice, show all fetched (up to 200)
 
     return history;
 }

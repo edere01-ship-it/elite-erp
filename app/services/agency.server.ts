@@ -256,3 +256,102 @@ export async function getAgencyEnhancedStats(agencyId: string) {
         topAgents: topAgents.sort((a, b) => b.sales - a.sales).slice(0, 3)
     };
 }
+
+export async function getAgencyValidationHistory(agencyId: string) {
+    const [historyInvoices, historyExpenses, historyTransactions, historyPayrolls, historyEmployees] = await Promise.all([
+        prisma.invoice.findMany({
+            where: {
+                agencyId,
+                status: { in: ["agency_validated", "paid", "draft", "sent"] }
+            },
+            include: { client: true },
+            take: 20,
+            orderBy: { issueDate: "desc" }
+        }),
+        prisma.expenseReport.findMany({
+            where: {
+                agencyId,
+                status: { in: ["agency_validated", "approved", "rejected"] }
+            },
+            include: { submitter: true },
+            take: 20,
+            orderBy: { date: "desc" }
+        }),
+        prisma.transaction.findMany({
+            where: {
+                agencyId,
+                status: { in: ["completed", "cancelled"] }
+            },
+            include: { recorder: true },
+            take: 20,
+            orderBy: { date: "desc" }
+        }),
+        prisma.payrollRun.findMany({
+            where: {
+                agencyId,
+                status: { in: ["pending_general", "direction_approved", "finance_validated", "paid", "agency_rejected"] }
+            },
+            take: 20,
+            orderBy: { updatedAt: "desc" }
+        }),
+        prisma.employee.findMany({
+            where: {
+                agencyId,
+                status: { in: ["pending_general", "active", "rejected"] }
+            },
+            include: { user: true },
+            take: 20,
+            orderBy: { updatedAt: "desc" }
+        })
+    ]);
+
+    const history = [
+        ...historyInvoices.map(i => ({
+            id: i.id,
+            type: "Facture",
+            description: `Facture #${i.number}`,
+            amount: i.total,
+            status: i.status === "draft" ? "Rejeté (Brouillon)" : "Validé",
+            date: i.issueDate,
+            details: i.client ? `${i.client.firstName} ${i.client.lastName}` : ""
+        })),
+        ...historyExpenses.map(e => ({
+            id: e.id,
+            type: "Dépense",
+            description: e.description,
+            amount: e.amount,
+            status: e.status === "rejected" ? "Rejeté" : "Validé",
+            date: e.date,
+            details: e.submitter.username
+        })),
+        ...historyTransactions.map(t => ({
+            id: t.id,
+            type: "Transaction",
+            description: t.description,
+            amount: t.amount,
+            status: t.status === "cancelled" ? "Rejeté" : "Validé",
+            date: t.date,
+            details: t.recorder?.username || "Système"
+        })),
+        ...historyPayrolls.map(p => ({
+            id: p.id,
+            type: "Paie",
+            description: `Paie ${p.month}/${p.year}`,
+            amount: p.totalAmount,
+            status: p.status === "agency_rejected" ? "Rejeté" : "Validé",
+            date: p.updatedAt,
+            details: "Masse Salariale"
+        })),
+        ...historyEmployees.map(e => ({
+            id: e.id,
+            type: "Employé",
+            description: `Recrutement ${e.firstName} ${e.lastName}`,
+            amount: e.salary,
+            status: e.status === "rejected" ? "Rejeté" : "Validé",
+            date: e.updatedAt,
+            details: e.position
+        }))
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    return history;
+}

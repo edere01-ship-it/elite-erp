@@ -6,10 +6,11 @@ interface ValidationManagerProps {
     pendingPayrolls: any[];
     pendingInvoices: any[];
     pendingExpenses: any[];
+    validationHistory: any[];
 }
 
-export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExpenses }: ValidationManagerProps) {
-    const [activeTab, setActiveTab] = useState<'payroll' | 'revenue' | 'expense'>('payroll');
+export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExpenses, validationHistory }: ValidationManagerProps) {
+    const [activeTab, setActiveTab] = useState<'payroll' | 'revenue' | 'expense' | 'history'>('payroll');
     const [rejectionState, setRejectionState] = useState<{
         isOpen: boolean;
         itemId: string | null;
@@ -31,11 +32,6 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
     const closeRejectionModal = () => {
         setRejectionState({ isOpen: false, itemId: null, intent: "" });
     };
-
-    // Auto-close modal on success (when navigation goes back to idle)
-    // Actually, navigation state might flicker, better to rely on logic or user closing.
-    // But standard remix/react-router pattern: if we submitted, and come back, we reset.
-    // Let's just reset on submit for now or let the user see it's done.
 
     return (
         <div className="space-y-6 relative">
@@ -132,6 +128,13 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
                                 {pendingExpenses.length}
                             </span>
                         )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('history')}
+                        className={`${activeTab === 'history' ? 'border-gray-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'} border-b-2 py-4 px-1 text-sm font-medium flex items-center`}
+                    >
+                        <Check className="mr-2 h-4 w-4" />
+                        Historique Validations
                     </button>
                 </nav>
             </div>
@@ -296,6 +299,58 @@ export function ValidationManager({ pendingPayrolls, pendingInvoices, pendingExp
                             ))
                         )}
                     </ul>
+                )}
+
+                {/* History Tab */}
+                {activeTab === 'history' && (
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Émetteur</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {validationHistory.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun historique de validation.</td>
+                                    </tr>
+                                ) : (
+                                    validationHistory.map((item: any, idx: number) => (
+                                        <tr key={item.id + idx} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex items-center">
+                                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${item.type === 'Paie' ? 'bg-purple-50 text-purple-700 ring-purple-600/20' :
+                                                        item.type === 'Dépense' ? 'bg-orange-50 text-orange-700 ring-orange-600/20' :
+                                                            'bg-gray-50 text-gray-600 ring-gray-500/10'
+                                                        }`}>
+                                                        {item.type}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.emitter}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{formatMoney(item.amount)}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset ${item.status.includes('Validé') ? 'bg-green-50 text-green-700 ring-green-600/20' :
+                                                    item.status.includes('Rejeté') ? 'bg-red-50 text-red-700 ring-red-600/20' :
+                                                        'bg-yellow-50 text-yellow-800 ring-yellow-600/20'
+                                                    }`}>
+                                                    {item.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(item.date).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>
