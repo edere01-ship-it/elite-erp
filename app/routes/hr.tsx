@@ -8,7 +8,12 @@ import { SalaryTransmissionSheet } from "~/components/hr/SalaryTransmissionSheet
 import { HRDashboard } from "~/components/hr/HRDashboard";
 import { Assignments } from "~/components/hr/Assignments";
 import { PayslipManager } from "~/components/hr/PayslipManager";
-import { cn } from "~/lib/utils";
+import { cn, translateStatus } from "~/lib/utils";
+// ... (omitted lines to fetch correct context, will rely on finding the specific line relative to imports or mapping)
+
+// Actually, I need to do this in two chunks or be careful with context.
+// Let's first add the import.
+
 import type { Route } from "./+types/hr";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
@@ -493,7 +498,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         })),
         ...recentPayrolls.map(p => ({
             id: p.id,
-            description: `Paie ${p.month}/${p.year} - Statut: ${p.status}`,
+            description: `Paie ${p.month}/${p.year} - Statut: ${translateStatus(p.status)}`,
             date: p.updatedAt,
             type: 'payroll'
         }))

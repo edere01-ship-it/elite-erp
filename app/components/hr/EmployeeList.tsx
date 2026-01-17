@@ -1,6 +1,6 @@
 import type { Employee } from "~/types/employee";
 import { User, Edit, Trash2 } from "lucide-react";
-import { cn, formatCurrency } from "~/lib/utils";
+import { cn, formatCurrency, translateStatus } from "~/lib/utils";
 
 interface EmployeeListProps {
     employees: Employee[];
@@ -77,12 +77,7 @@ export function EmployeeList({ employees, onEdit, onDelete }: EmployeeListProps)
                                                         "bg-gray-100 text-gray-800"
                                     )}
                                 >
-                                    {employee.status === "active" ? "Actif" :
-                                        employee.status === "pending" ? "En attente" :
-                                            employee.status === "pending_agency" ? "Attente Agence" :
-                                                employee.status === "pending_general" ? "Attente DG" :
-                                                    employee.status === "on_leave" ? "En congé" :
-                                                        "Terminé"}
+                                    {translateStatus(employee.status)}
                                 </span>
                             </td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">

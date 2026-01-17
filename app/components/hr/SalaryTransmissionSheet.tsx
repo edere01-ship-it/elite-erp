@@ -2,7 +2,7 @@ import type { PayrollRun, PayrollItem } from "~/types/employee";
 import { FileText, Send, Printer, Plus, Save, Loader2, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFetcher } from "react-router";
-import { cn, formatCurrency } from "~/lib/utils";
+import { cn, formatCurrency, translateStatus } from "~/lib/utils";
 
 interface SalaryTransmissionSheetProps {
     payrollRun: PayrollRun | null;
@@ -132,12 +132,7 @@ export function SalaryTransmissionSheet({ payrollRun, currentMonth, onMonthChang
                                                 payrollRun.status === 'pending_general' ? "bg-orange-100 text-orange-800" :
                                                     "bg-gray-100 text-gray-800"
                             )}>
-                                {payrollRun.status === 'paid' ? "Payé" :
-                                    payrollRun.status === 'direction_approved' ? "Approuvé (Dir. Générale)" :
-                                        payrollRun.status === 'finance_validated' ? "Validé (Finance)" :
-                                            payrollRun.status === 'pending_agency' ? "Attente Agence" :
-                                                payrollRun.status === 'pending_general' ? "Attente DG" :
-                                                    "Brouillon"}
+                                {translateStatus(payrollRun.status)}
                             </span>
                         </div>
                         <div className="flex gap-2">

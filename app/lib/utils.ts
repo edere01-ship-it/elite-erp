@@ -13,3 +13,21 @@ export function formatCurrency(amount: number) {
         maximumFractionDigits: 0,
     }).format(amount);
 }
+
+export function translateStatus(status: string): string {
+    const map: Record<string, string> = {
+        'draft': 'Brouillon',
+        'pending_agency': 'Attente Agence',
+        'pending_general': 'Attente Direction Générale',
+        'hr_validated': 'Validé RH',
+        'finance_validated': 'Validé Finance',
+        'direction_approved': 'Approuvé Direction',
+        'paid': 'Payé',
+        'active': 'Actif',
+        'pending': 'En attente',
+        'item_rejected': 'Rejeté',
+        'terminated': 'Terminé',
+        'on_leave': 'En congé'
+    };
+    return map[status] || status;
+}
