@@ -155,8 +155,12 @@ export default function Documents() {
         // Inside a folder
         if (item.type === 'folder') return false; // Hide folders (no nested folders implemented yet)
 
-        // Filter files by category matching the current path
-        const folderName = currentPath.substring(1); // e.g. "Contrats"
+        // Find the folder object that matches the current path
+        const currentFolder = items.find(i => i.type === 'folder' && i.path === currentPath);
+
+        if (!currentFolder) return false;
+
+        const folderName = currentFolder.name; // e.g. "Photos Employés"
 
         // Find the category key corresponding to this folder name
         const categoryEntry = Object.entries(CATEGORY_MAP).find(([key, name]) => name === folderName);
