@@ -84,6 +84,7 @@ model Employee {
   startDate  DateTime
   salary     Float
   status     String   @default("active") // active, on_leave, terminated
+  rejectionReason String?
 
   agencyId String?
   agency   Agency? @relation(fields: [agencyId], references: [id])
@@ -274,6 +275,7 @@ model Transaction {
   type          String // income, expense
   category      String
   status        String // pending, completed, cancelled
+  rejectionReason String?
   reference     String?
   paymentMethod String
 

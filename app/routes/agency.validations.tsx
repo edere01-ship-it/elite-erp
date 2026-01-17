@@ -1,4 +1,5 @@
 import { redirect, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
+import { useState, useEffect } from "react";
 import { Form, useLoaderData, useNavigation } from "react-router";
 import { getAgencyPendingInvoices, getAgencyPendingExpenses, getAgencyPendingTransactions, getAgencyPendingPayrolls, getAgencyPendingEmployees, validateByAgency, rejectByAgency, getAgencyValidationHistory } from "~/services/agency.server";
 import { requirePermission } from "~/utils/session.server";
@@ -41,6 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const intent = formData.get("intent") as string;
     const itemId = formData.get("itemId") as string;
     const type = formData.get("type") as 'invoice' | 'expense' | 'transaction' | 'payroll' | 'employee';
+    const reason = formData.get("reason") as string;
 
     if (!itemId || !type) return { error: "Missing Parameters" };
 
@@ -48,7 +50,8 @@ export async function action({ request }: ActionFunctionArgs) {
         await validateByAgency(itemId, type, user.id);
         return { success: true, message: "Validé avec succès" };
     } else if (intent === "reject") {
-        await rejectByAgency(itemId, type);
+        if (!reason) return { error: "Motif de refus requis" }; // Enforce reason
+        await rejectByAgency(itemId, type, reason);
         return { success: true, message: "Rejeté avec succès" };
     }
 
@@ -60,23 +63,42 @@ export default function AgencyValidations() {
     const navigation = useNavigation();
     const isSubmitting = navigation.state === "submitting";
 
+    const [rejectModalOpen, setRejectModalOpen] = useState(false);
+    const [selectedRejection, setSelectedRejection] = useState<{ id: string, type: string } | null>(null);
+
+    const openRejectModal = (id: string, type: string) => {
+        setSelectedRejection({ id, type });
+        setRejectModalOpen(true);
+    };
+
+    const closeRejectModal = () => {
+        setSelectedRejection(null);
+        setRejectModalOpen(false);
+    };
+
+    // Close modal when navigation completes (success action)
+    useEffect(() => {
+        if (navigation.state === "idle" && !isSubmitting) {
+            closeRejectModal();
+        }
+    }, [navigation.state, isSubmitting]);
+
+
     const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
     const formatDate = (date: string | Date) => new Date(date).toLocaleDateString();
 
     const renderValidationButton = (id: string, type: string) => (
         <div className="flex gap-2">
-            <Form method="post" className="inline">
-                <input type="hidden" name="itemId" value={id} />
-                <input type="hidden" name="type" value={type} />
-                <input type="hidden" name="intent" value="reject" />
-                <button
-                    disabled={isSubmitting}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-                    title="Rejeter"
-                >
-                    <X className="w-5 h-5" />
-                </button>
-            </Form>
+
+            <button
+                disabled={isSubmitting}
+                onClick={() => openRejectModal(id, type)}
+                className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                title="Rejeter"
+            >
+                <X className="w-5 h-5" />
+            </button>
+
             <Form method="post" className="inline">
                 <input type="hidden" name="itemId" value={id} />
                 <input type="hidden" name="type" value={type} />
@@ -93,7 +115,46 @@ export default function AgencyValidations() {
     );
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 relative">
+            {/* Modal for Rejection */}
+            {rejectModalOpen && selectedRejection && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-4">Motif du refus</h3>
+                        <p className="text-sm text-gray-500 mb-4">Veuillez indiquer la raison pour laquelle vous rejetez cet élément. Cette information sera transmise au créateur.</p>
+
+                        <Form method="post" onSubmit={() => setTimeout(closeRejectModal, 100)}>
+                            <input type="hidden" name="itemId" value={selectedRejection.id} />
+                            <input type="hidden" name="type" value={selectedRejection.type} />
+                            <input type="hidden" name="intent" value="reject" />
+
+                            <textarea
+                                name="reason"
+                                required
+                                className="w-full border border-gray-300 rounded-lg p-3 min-h-[100px] mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                placeholder="Ex: Montant incorrect, pièce justificative manquante..."
+                            />
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={closeRejectModal}
+                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                >
+                                    Annuler
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isSubmitting}
+                                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                                >
+                                    {isSubmitting ? 'Traitement...' : 'Confirmer le rejet'}
+                                </button>
+                            </div>
+                        </Form>
+                    </div>
+                </div>
+            )}
 
             {/* EMPLOYEES VALIDATION */}
             <div>
@@ -252,6 +313,7 @@ export default function AgencyValidations() {
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -282,6 +344,9 @@ export default function AgencyValidations() {
                                                 }`}>
                                                 {item.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-gray-500 italic max-w-xs truncate">
+                                            {item.reason || "-"}
                                         </td>
                                     </tr>
                                 ))}

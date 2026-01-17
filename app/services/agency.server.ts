@@ -1,5 +1,5 @@
 import { prisma } from "~/db.server";
-import { notifyFinance, notifyDirection, broadcastNotificationByPermission } from "~/services/notification.server";
+import { notifyFinance, notifyDirection, broadcastNotificationByPermission, sendNotification } from "~/services/notification.server";
 
 export type AgencyPendingItems = {
     invoices: Awaited<ReturnType<typeof getAgencyPendingInvoices>>;
@@ -192,33 +192,86 @@ export async function validateByAgency(itemId: string, type: 'invoice' | 'expens
     }
 }
 
-export async function rejectByAgency(itemId: string, type: 'invoice' | 'expense' | 'transaction' | 'payroll' | 'employee') {
+export async function rejectByAgency(itemId: string, type: 'invoice' | 'expense' | 'transaction' | 'payroll' | 'employee', reason: string) {
     switch (type) {
         case 'invoice':
+            // Notify Client or Creator? For now just setting status.
+            // Ideally notify the agent who created it? Invoice doesn't have a "creatorId", just agencyId.
             return prisma.invoice.update({
                 where: { id: itemId },
-                data: { status: 'draft' }
+                data: {
+                    status: 'draft',
+                    rejectionReason: reason
+                }
             });
         case 'expense':
-            return prisma.expenseReport.update({
+            const exp = await prisma.expenseReport.update({
                 where: { id: itemId },
-                data: { status: 'rejected' }
+                data: {
+                    status: 'rejected',
+                    rejectionReason: reason
+                },
+                include: { submitter: true }
             });
+
+            // Notify Submitter
+            await sendNotification(
+                exp.submitterId,
+                "Dépense Rejetée",
+                `Votre dépense "${exp.description}" a été rejetée. Motif: ${reason}`,
+                "error",
+                "/expenses" // or wherever they view their expenses
+            );
+            return exp;
+
         case 'transaction':
+            // Transaction doesn't have rejectionReason in schema yet.
+            // Just cancelling.
             return prisma.transaction.update({
                 where: { id: itemId },
-                data: { status: 'cancelled' }
+                data: { status: 'cancelled', rejectionReason: reason }
             });
+
         case 'payroll':
-            return prisma.payrollRun.update({
+            const pay = await prisma.payrollRun.update({
                 where: { id: itemId },
-                data: { status: 'agency_rejected' }
+                data: {
+                    status: 'agency_rejected',
+                    rejectionReason: reason
+                },
+                include: { agency: true }
             });
+
+            // Notify HR (who created it).
+            // We need to find who is "HR" for this or just broadcast to HR permission holders.
+            await broadcastNotificationByPermission(
+                "hr.manage", // Assuming this permission exists for HR Manager
+                "Paie Rejetée",
+                `La paie ${pay.month}/${pay.year} a été rejetée par le manager. Motif: ${reason}`,
+                "error",
+                "/hr"
+            );
+            return pay;
+
         case 'employee':
-            return prisma.employee.update({
+            // Employee schema doesn't have rejectionReason.
+            // Should we add it? For now, we proceed without saving it to DB field if it's missing,
+            // BUT we definitely send the notification.
+            const emp = await prisma.employee.update({
                 where: { id: itemId },
-                data: { status: 'rejected' }
+                data: { status: 'rejected', rejectionReason: reason }, // or agency_rejected?
+                select: { firstName: true, lastName: true }
             });
+
+            await broadcastNotificationByPermission(
+                "hr.manage",
+                "Recrutement Rejeté",
+                `Le recrutement de ${emp.firstName} ${emp.lastName} a été rejeté. Motif: ${reason}`,
+                "error",
+                "/hr"
+            );
+            return emp;
+
         default:
             throw new Error(`Unknown validation type: ${type}`);
     }
@@ -347,7 +400,8 @@ export async function getAgencyValidationHistory(agencyId: string) {
             amount: i.total,
             status: i.status === "draft" ? "Rejeté (Brouillon)" : "Validé",
             date: i.issueDate,
-            details: i.client ? `${i.client.firstName} ${i.client.lastName}` : ""
+            details: i.client ? `${i.client.firstName} ${i.client.lastName}` : "",
+            reason: i.rejectionReason
         })),
         ...historyExpenses.map(e => ({
             id: e.id,
@@ -356,7 +410,8 @@ export async function getAgencyValidationHistory(agencyId: string) {
             amount: e.amount,
             status: e.status === "rejected" ? "Rejeté" : "Validé",
             date: e.date,
-            details: e.submitter.username
+            details: e.submitter.username,
+            reason: e.rejectionReason
         })),
         ...historyTransactions.map(t => ({
             id: t.id,
@@ -365,7 +420,8 @@ export async function getAgencyValidationHistory(agencyId: string) {
             amount: t.amount,
             status: t.status === "cancelled" ? "Rejeté" : "Validé",
             date: t.date,
-            details: t.recorder?.username || "Système"
+            details: t.recorder?.username || "Système",
+            reason: t.rejectionReason
         })),
         ...historyPayrolls.map(p => ({
             id: p.id,
@@ -374,7 +430,8 @@ export async function getAgencyValidationHistory(agencyId: string) {
             amount: p.totalAmount,
             status: p.status === "agency_rejected" ? "Rejeté" : "Validé",
             date: p.updatedAt,
-            details: "Masse Salariale"
+            details: "Masse Salariale",
+            reason: p.rejectionReason
         })),
         ...historyEmployees.map(e => ({
             id: e.id,
@@ -383,7 +440,8 @@ export async function getAgencyValidationHistory(agencyId: string) {
             amount: e.salary,
             status: e.status === "rejected" ? "Rejeté" : "Validé",
             date: e.updatedAt,
-            details: e.position
+            details: e.position,
+            reason: e.rejectionReason
         }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 

@@ -182,7 +182,8 @@ export async function getValidationHistory() {
             emitter: e.submitter.username,
             amount: e.amount,
             status: e.status === "approved" ? "Validé" : "Rejeté",
-            date: e.date // Changed from updatedAt
+            date: e.date, // Changed from updatedAt
+            reason: e.rejectionReason
         })),
         ...historyPayrolls.map(p => ({
             id: p.id,
@@ -190,7 +191,8 @@ export async function getValidationHistory() {
             emitter: "RH",
             amount: p.totalAmount,
             status: p.status === "direction_approved" || p.status === "paid" ? "Validé" : "Rejeté (Renvoyé Agence)",
-            date: p.updatedAt
+            date: p.updatedAt,
+            reason: p.rejectionReason
         })),
         ...historyTransactions.map(t => ({
             id: t.id,
@@ -198,7 +200,8 @@ export async function getValidationHistory() {
             emitter: t.recorder?.username || "Système",
             amount: t.amount,
             status: t.status === "completed" ? "Validé" : "Rejeté",
-            date: t.date // Changed from updatedAt
+            date: t.date, // Changed from updatedAt
+            reason: t.rejectionReason
         })),
         ...historyAssignments.map(e => ({
             id: e.id,
@@ -207,7 +210,8 @@ export async function getValidationHistory() {
             amount: 0,
             status: "Validé",
             date: e.updatedAt,
-            details: `${e.firstName} ${e.lastName} -> ${e.agency?.name}`
+            details: `${e.firstName} ${e.lastName} -> ${e.agency?.name}`,
+            reason: e.rejectionReason // In case we add rejection for assignments later/now
         }))
     ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // No slice, show all fetched (up to 200)
 

@@ -1,7 +1,7 @@
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import { Link, useLoaderData, useNavigation, useSubmit, redirect, useActionData, Form } from "react-router";
 import { useState, useEffect } from "react";
-import { Users, FileText, Plus, UserPlus, Send, LayoutDashboard, Briefcase, Printer } from "lucide-react";
+import { Users, FileText, Plus, UserPlus, Send, LayoutDashboard, Briefcase, Printer, AlertCircle } from "lucide-react";
 import { EmployeeList } from "~/components/hr/EmployeeList";
 import { EmployeeForm } from "~/components/hr/EmployeeForm";
 import { SalaryTransmissionSheet } from "~/components/hr/SalaryTransmissionSheet";
@@ -382,6 +382,13 @@ export async function action({ request }: ActionFunctionArgs) {
         return { success: true };
     }
 
+    if (intent === "delete_payroll") {
+        await requirePermission(userId, PERMISSIONS.HR_DELETE);
+        const runId = formData.get("runId") as string;
+        await prisma.payrollRun.delete({ where: { id: runId } });
+        return { success: true };
+    }
+
     return null;
 }
 
@@ -464,7 +471,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
     // Recent Activity (Mocked or simple query)
     // Recent Activity Aggregation
-    const [recentNewEmployees, recentAssignments, recentPayrolls] = await Promise.all([
+    const [recentNewEmployees, recentAssignments, recentPayrolls, rejectedPayrolls, rejectedEmployees] = await Promise.all([
         prisma.employee.findMany({
             take: 10,
             orderBy: { createdAt: 'desc' },
@@ -480,6 +487,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
             take: 10,
             orderBy: { updatedAt: 'desc' },
             select: { id: true, month: true, year: true, status: true, updatedAt: true }
+        }),
+        prisma.payrollRun.findMany({
+            where: { status: 'rejected' }, // Items rejected by Agency
+            include: { agency: true }
+        }),
+        prisma.employee.findMany({
+            where: { status: 'rejected' }, // Items rejected by Agency/Direction
+            include: { agency: true }
         })
     ]);
 
@@ -523,7 +538,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
             pendingValidations,
             avgSalary: activeEmployees > 0 ? theoreticalPayroll / activeEmployees : 0
         },
-        recentActivity
+        recentActivity,
+        rejectedItems: {
+            payrolls: rejectedPayrolls,
+            employees: rejectedEmployees
+        }
     };
 }
 
@@ -583,8 +602,108 @@ export default function HR() {
         }
     }, [actionData]);
 
+    const { rejectedItems } = useLoaderData<typeof loader>();
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [currentAlertItem, setCurrentAlertItem] = useState<any>(null);
+
+    useEffect(() => {
+        // Check for rejections on load
+        const allRejections = [
+            ...(rejectedItems?.payrolls || []).map((p: any) => ({ ...p, type: 'payroll' })),
+            ...(rejectedItems?.employees || []).map((e: any) => ({ ...e, type: 'employee' }))
+        ];
+
+        if (allRejections.length > 0) {
+            setCurrentAlertItem(allRejections[0]); // Show first one
+            setAlertOpen(true);
+        }
+    }, [rejectedItems]);
+
+    const handleCorrect = (item: any) => {
+        setAlertOpen(false);
+        if (item.type === 'employee') {
+            setEditingEmployee(item);
+            setActiveTab('add_employee');
+        } else if (item.type === 'payroll') {
+            submit({ month: `${item.year}-${String(item.month).padStart(2, '0')}` }, { method: "get" }); // Load that month
+            setActiveTab('payroll');
+        }
+    };
+
+    const handleCancelAlert = (item: any) => {
+        if (confirm("Êtes-vous sûr de vouloir annuler et supprimer cet élément rejeté ?")) {
+            if (item.type === 'employee') {
+                submit({ intent: "delete", id: item.id }, { method: "post" });
+            } else if (item.type === 'payroll') {
+                submit({ intent: "delete_payroll", runId: item.id }, { method: "post" });
+            }
+            setAlertOpen(false); // Close current
+            // Logic to show next one could implement here if needed via useEffect dependency
+        }
+    };
+
     return (
         <div className="space-y-6">
+            {/* Rejection Alert Modal */}
+            {alertOpen && currentAlertItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-red-900/40 transition-opacity backdrop-blur-sm" />
+                    <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-red-100 transition-all">
+                        <div className="bg-red-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-red-100">
+                            <div className="sm:flex sm:items-start">
+                                <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                    <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                                </div>
+                                <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                    <h3 className="text-lg font-bold leading-6 text-red-900" id="modal-title">
+                                        Transmission Rejetée !
+                                    </h3>
+                                    <div className="mt-2">
+                                        <p className="text-sm text-red-700">
+                                            Votre transmission a été rejetée. Veuillez consulter le motif ci-dessous pour corriger ou annuler.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4">
+                            <div className="space-y-3">
+                                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                                    <p className="text-sm font-semibold text-gray-700">Elément concerné :</p>
+                                    <p className="text-sm text-gray-900">
+                                        {currentAlertItem.type === 'payroll'
+                                            ? `Paie ${currentAlertItem.month}/${currentAlertItem.year} - ${currentAlertItem.agency?.name || 'Agence'}`
+                                            : `Employé: ${currentAlertItem.firstName} ${currentAlertItem.lastName}`}
+                                    </p>
+                                </div>
+                                <div className="bg-red-50 p-3 rounded-md border border-red-200">
+                                    <p className="text-sm font-semibold text-red-800">Motif du rejet :</p>
+                                    <p className="text-sm text-red-900 italic mt-1">
+                                        "{currentAlertItem.rejectionReason || "Aucun motif spécifié"}"
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => handleCorrect(currentAlertItem)}
+                                className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
+                            >
+                                Corriger / Renvoyer
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleCancelAlert(currentAlertItem)}
+                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 sm:mt-0 sm:w-auto"
+                            >
+                                Annuler (Supprimer)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Ressources Humaines</h1>

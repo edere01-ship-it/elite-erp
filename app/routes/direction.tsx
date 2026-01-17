@@ -147,6 +147,27 @@ export async function action({ request }: ActionFunctionArgs) {
         return { success: true };
     }
 
+    if (intent === "reject_employee") {
+        const id = formData.get("id") as string;
+        const reason = formData.get("reason") as string;
+        const employee = await prisma.employee.update({
+            where: { id },
+            data: { status: 'rejected', rejectionReason: reason },
+            include: { agency: true }
+        });
+
+        if (employee.agencyId) {
+            await notifyAgencyManagers(
+                employee.agencyId,
+                "Recrutement Rejeté",
+                `Le recrutement de ${employee.firstName} ${employee.lastName} a été rejeté. Motif: ${reason}`,
+                "error",
+                "/agency/employees"
+            );
+        }
+        return { success: true };
+    }
+
     if (intent === "validate_assignment") {
         const employeeId = formData.get("id") as string;
         // Fetch to get pending value then update
@@ -536,16 +557,24 @@ export default function DirectionDashboard() {
                                                         </button>
                                                     </div>
                                                 ) : item.type === 'Recrutement' ? (
-                                                    <Form method="post">
-                                                        <input type="hidden" name="intent" value="validate_employee" />
-                                                        <input type="hidden" name="id" value={item.id} />
+                                                    <div className="flex justify-end gap-2">
+                                                        <Form method="post">
+                                                            <input type="hidden" name="intent" value="validate_employee" />
+                                                            <input type="hidden" name="id" value={item.id} />
+                                                            <button
+                                                                type="submit"
+                                                                className="text-green-600 hover:text-green-900 font-semibold bg-green-50 px-3 py-1 rounded-md"
+                                                            >
+                                                                Approuver
+                                                            </button>
+                                                        </Form>
                                                         <button
-                                                            type="submit"
-                                                            className="text-green-600 hover:text-green-900 font-semibold bg-green-50 px-3 py-1 rounded-md"
+                                                            onClick={() => openRejectionModal(item.id, "reject_employee")}
+                                                            className="text-red-600 hover:text-red-900 font-semibold bg-red-50 px-3 py-1 rounded-md"
                                                         >
-                                                            Approuver
+                                                            Rejeter
                                                         </button>
-                                                    </Form>
+                                                    </div>
                                                 ) : item.type === 'Affectation' ? (
                                                     <Form method="post">
                                                         <input type="hidden" name="intent" value="validate_assignment" />
@@ -587,11 +616,12 @@ export default function DirectionDashboard() {
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Motif</th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
                                     {validationHistory.length === 0 ? (
-                                        <tr><td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun historique récent.</td></tr>
+                                        <tr><td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">Aucun historique récent.</td></tr>
                                     ) : validationHistory.map((item: any) => (
                                         <tr key={item.id} className="hover:bg-gray-50">
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -617,6 +647,9 @@ export default function DirectionDashboard() {
                                                 )}>
                                                     {item.status}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 italic max-w-xs truncate">
+                                                {item.reason || "-"}
                                             </td>
                                         </tr>
                                     ))}

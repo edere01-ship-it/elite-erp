@@ -1,0 +1,375 @@
+﻿node.exe : 
+[31mÔ£ù[39m Build 
+failed in 2.62s
+Au caractère Ligne:1 
+: 1
++ & "C:\Program Files
+\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: ([31mÔ£   
+ ù[39m Build fai    
+led in 2.62s:Str    
+ing) [], RemoteE    
+xception
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+[31m[commonjs--resol
+ver] 
+[31mServer-only 
+module referenced by 
+client[31m
+
+    '~/db.server' 
+imported by route 
+'app/routes/hr.tsx'
+
+  React Router 
+automatically 
+removes server-code 
+from these exports:
+    `loader`, 
+`action`, 
+`middleware`, 
+`headers`
+
+  But other route 
+exports in 
+'app/routes/hr.tsx' 
+depend on 
+'~/db.server'.
+
+  See https://reactro
+uter.com/explanation/
+code-splitting#remova
+l-of-server-code
+[39m
+    at 
+Object.resolveId (C:\
+Users\COMPTABILITE EB
+C\source\repos\elite_
+immobilier\elite-erp\
+node_modules\@react-r
+outer\dev\dist\vite.j
+s:3832:17)
+    at PluginDriver.h
+ookFirstAndGetPlugin 
+(file:///C:/Users/COM
+PTABILITE%20EBC/sourc
+e/repos/elite_immobil
+ier/elite-erp/node_mo
+dules/rollup/dist/es/
+shared/node-entry.js:
+22453:28)
+    at resolveId (fil
+e:///C:/Users/COMPTAB
+ILITE%20EBC/source/re
+pos/elite_immobilier/
+elite-erp/node_module
+s/rollup/dist/es/shar
+ed/node-entry.js:2092
+9:26)
+    at ModuleLoader.r
+esolveId (file:///C:/
+Users/COMPTABILITE%20
+EBC/source/repos/elit
+e_immobilier/elite-er
+p/node_modules/rollup
+/dist/es/shared/node-
+entry.js:21366:15)
+    at 
+Object.resolveId (fil
+e:///C:/Users/COMPTAB
+ILITE%20EBC/source/re
+pos/elite_immobilier/
+elite-erp/node_module
+s/vite/dist/node/chun
+ks/config.js:4154:21)
+    at PluginDriver.h
+ookFirstAndGetPlugin 
+(file:///C:/Users/COM
+PTABILITE%20EBC/sourc
+e/repos/elite_immobil
+ier/elite-erp/node_mo
+dules/rollup/dist/es/
+shared/node-entry.js:
+22453:28)
+    at resolveId (fil
+e:///C:/Users/COMPTAB
+ILITE%20EBC/source/re
+pos/elite_immobilier/
+elite-erp/node_module
+s/rollup/dist/es/shar
+ed/node-entry.js:2092
+9:26)
+    at ModuleLoader.r
+esolveId (file:///C:/
+Users/COMPTABILITE%20
+EBC/source/repos/elit
+e_immobilier/elite-er
+p/node_modules/rollup
+/dist/es/shared/node-
+entry.js:21366:15)
+    at file:///C:/Use
+rs/COMPTABILITE%20EBC
+/source/repos/elite_i
+mmobilier/elite-erp/n
+ode_modules/rollup/di
+st/es/shared/node-ent
+ry.js:21670:50 {
+  code: 
+'PLUGIN_ERROR',
+  plugin: 
+'commonjs--resolver',
+  hook: 'resolveId',
+  watchFiles: [
+    'C:\\Users\\COMPT
+ABILITE EBC\\source\\
+repos\\elite_immobili
+er\\elite-erp\\packag
+e.json',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/_p
+rotected.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+@react-router/dev/dis
+t/config/defaults/ent
+ry.client.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/root.tsx'
+,
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.agents.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.employees.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.properties.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.projects.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.finance.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.commercial.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ho
+me.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/hr
+.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/di
+rection.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/co
+mmercial.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ag
+ency.validations.tsx'
+,
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/pr
+operties.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/co
+nstruction.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/vi
+sits.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/le
+gal.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/fi
+nance.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/do
+cuments.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/it
+.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/lo
+gin.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ap
+i.tickets.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ap
+i.notifications.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ap
+i.messages.ts',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/lo
+gout.tsx',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/app/routes/ap
+i.sse.ts',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react/jsx-runtime.js'
+,
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react/index.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-dom/client.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-router/dist/dev
+elopment/dom-export.m
+js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react/cjs/react-jsx-r
+untime.production.js'
+,
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react/cjs/react.produ
+ction.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-dom/cjs/react-d
+om-client.production.
+js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-dom/index.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-router/dist/dev
+elopment/chunk-PMGK55
+4W.mjs',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-router/dist/dev
+elopment/chunk-WWGJGF
+F6.mjs',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+scheduler/index.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+react-dom/cjs/react-d
+om.production.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+scheduler/cjs/schedul
+er.production.js',
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+cookie/dist/index.js'
+,
+    'C:/Users/COMPTAB
+ILITE EBC/source/repo
+s/elite_immobilier/el
+ite-erp/node_modules/
+set-cookie-parser/lib
+/set-cookie.js'
+  ]
+}
