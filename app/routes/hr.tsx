@@ -12,9 +12,6 @@ import { cn } from "~/lib/utils";
 import type { Route } from "./+types/hr";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
-import { prisma } from "~/db.server";
-import { createDocument } from "~/services/documents.server";
-import { uploadFile } from "~/utils/upload.server";
 
 export function meta({ }: Route.MetaArgs) {
     return [
@@ -39,6 +36,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const { prisma } = await import("~/db.server");
     const { requirePermission } = await import("~/utils/permissions.server");
     const { uploadFile } = await import("~/utils/upload.server");
+    const { createDocument } = await import("~/services/documents.server");
 
     // Helper to parse currency input (e.g. "150 000" -> 150000)
     const parseCurrency = (val: string) => parseFloat(val.replace(/\s/g, '')) || 0;
