@@ -32,18 +32,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     // Fetch Land Developments
-    const developments = await getLandDevelopments();
-
-    return { projects, developments };
+    try {
+        const developments = await getLandDevelopments();
+        return { projects, developments, error: null };
+    } catch (e: any) {
+        console.error("Loader Error:", e);
+        return {
+            projects,
+            developments: [],
+            error: e.message || "Erreur de chargement des données"
+        };
+    }
 }
 
 export default function AgencyProjects() {
-    const { projects, developments } = useLoaderData<typeof loader>();
+    const { projects, developments, error } = useLoaderData<typeof loader>();
 
     const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
 
     return (
         <div className="space-y-12">
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Erreur : </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
 
             {/* Land Developments Section (Primary Focus) */}
             <div>
