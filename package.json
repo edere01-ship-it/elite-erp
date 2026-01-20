@@ -6,8 +6,7 @@
     "dev": "react-router dev",
     "build": "npx prisma generate && react-router build",
     "start": "npx prisma db push --accept-data-loss --skip-generate && react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc",
-    "postinstall": "prisma generate"
+    "typecheck": "react-router typegen && tsc"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
