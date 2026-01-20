@@ -1,7 +1,7 @@
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import { Link, useLoaderData, useNavigation, useSubmit, redirect, useActionData, Form } from "react-router";
 import { useState, useEffect } from "react";
-import { Users, FileText, Plus, UserPlus, Send, LayoutDashboard, Briefcase, Printer, AlertCircle } from "lucide-react";
+import { Users, FileText, Plus, UserPlus, Send, LayoutDashboard, Briefcase, Printer, AlertCircle, Activity } from "lucide-react";
 import { EmployeeList } from "~/components/hr/EmployeeList";
 import { EmployeeForm } from "~/components/hr/EmployeeForm";
 import { SalaryTransmissionSheet } from "~/components/hr/SalaryTransmissionSheet";
@@ -459,15 +459,19 @@ export async function loader({ request }: LoaderFunctionArgs) {
         .reduce((sum, e) => sum + e.salary, 0);
 
     // Pending validations (Payroll runs that are Draft or HR Validated but not Paid)
-    const pendingRuns = await prisma.payrollRun.count({
-        where: { status: { in: ['draft', 'hr_validated', 'finance_validated', 'agency_rejected'] } }
+    const pendingRuns = await prisma.payrollRun.findMany({
+        where: { status: { in: ['draft', 'hr_validated', 'finance_validated', 'agency_rejected'] } },
+        orderBy: { updatedAt: 'desc' },
+        include: { agency: true }
     });
 
-    const pendingEmployees = await prisma.employee.count({
-        where: { status: 'pending' }
+    const pendingEmployees = await prisma.employee.findMany({
+        where: { status: 'pending' },
+        orderBy: { createdAt: 'desc' },
+        include: { agency: true }
     });
 
-    const pendingValidations = pendingRuns + pendingEmployees;
+    const pendingValidations = pendingRuns.length + pendingEmployees.length;
 
     // Recent Activity (Mocked or simple query)
     // Recent Activity Aggregation
@@ -542,16 +546,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
         rejectedItems: {
             payrolls: rejectedPayrolls,
             employees: rejectedEmployees
+        },
+        pendingTracking: {
+            runs: pendingRuns,
+            employees: pendingEmployees
         }
     };
 }
 
 export default function HR() {
-    const { employees, agencies, payrollRun, currentMonth, canCreate, canEdit, stats, recentActivity } = useLoaderData<typeof loader>();
+    const { employees, agencies, payrollRun, currentMonth, canCreate, canEdit, stats, recentActivity, pendingTracking } = useLoaderData<typeof loader>();
     const navigation = useNavigation();
     const submit = useSubmit();
 
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'employees' | 'add_employee' | 'assignments' | 'payroll' | 'transmission' | 'matricules' | 'printing'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'employees' | 'add_employee' | 'assignments' | 'payroll' | 'transmission' | 'matricules' | 'printing' | 'tracking'>('dashboard');
     const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
 
     const isSubmitting = navigation.state === "submitting" &&
@@ -814,6 +822,23 @@ export default function HR() {
                         <Printer className={cn("mr-2 h-5 w-5", activeTab === 'printing' ? "text-blue-500" : "text-gray-400")} />
                         Impressions
                     </button>
+                    <button
+                        onClick={() => setActiveTab('tracking')}
+                        className={cn(
+                            activeTab === 'tracking'
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
+                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
+                        )}
+                    >
+                        <Activity className={cn("mr-2 h-5 w-5", activeTab === 'tracking' ? "text-blue-500" : "text-gray-400")} />
+                        Suivi Validations
+                        {stats.pendingValidations > 0 && (
+                            <span className="ml-2 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                                {stats.pendingValidations}
+                            </span>
+                        )}
+                    </button>
                 </nav>
             </div>
 
@@ -923,7 +948,7 @@ export default function HR() {
                                 <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                                     <div>
                                         <p className="font-medium text-gray-900">Période: {currentMonth}</p>
-                                        <p className="text-sm text-gray-500">Statut: {payrollRun.status}</p>
+                                        <p className="text-sm text-gray-500">Statut: {translateStatus(payrollRun.status)}</p>
                                         <p className="text-sm text-gray-500">Total: {new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(payrollRun.totalAmount)}</p>
                                     </div>
                                     {payrollRun.status === 'draft' && (
@@ -941,7 +966,7 @@ export default function HR() {
                                     )}
                                     {payrollRun.status !== 'draft' && payrollRun.status !== 'agency_rejected' && (
                                         <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                            Déjà transmis / Validé ({payrollRun.status})
+                                            Déjà transmis / Validé ({translateStatus(payrollRun.status)})
                                         </span>
                                     )}
                                 </div>
@@ -995,6 +1020,83 @@ export default function HR() {
                         // @ts-ignore
                         employees={employees}
                     />
+                )}
+
+                {activeTab === 'tracking' && (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200">
+                                <h3 className="text-lg font-medium text-gray-900">Suivi des Validations</h3>
+                                <p className="text-sm text-gray-500">Suivez l'état d'avancement de vos transmissions.</p>
+                            </div>
+                            <div className="p-6 space-y-8">
+                                {pendingTracking?.runs.length === 0 && pendingTracking?.employees.length === 0 && (
+                                    <div className="text-center py-12 text-gray-500">
+                                        Aucune validation en attente.
+                                    </div>
+                                )}
+
+                                {pendingTracking?.runs.map((run: any) => (
+                                    <div key={run.id} className="relative">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-semibold text-gray-900">
+                                                Paie {run.month}/{run.year} - {run.agency?.name || 'Agence'}
+                                            </h4>
+                                            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 capitalize">
+                                                {run.status === 'pending_agency' ? 'Attente Agence' :
+                                                    run.status === 'pending_general' ? 'Attente Direction' :
+                                                        run.status === 'finance_validated' ? 'Attente Paiement' : run.status}
+                                            </span>
+                                        </div>
+                                        {/* Progress Bar */}
+                                        <div className="relative">
+                                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
+                                                <div style={{
+                                                    width:
+                                                        run.status === 'draft' ? '10%' :
+                                                            run.status === 'pending_agency' ? '30%' :
+                                                                run.status === 'pending_general' ? '50%' :
+                                                                    run.status === 'hr_validated' ? '70%' : // Assuming flow
+                                                                        run.status === 'finance_validated' ? '90%' : '100%'
+                                                }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500"></div>
+                                            </div>
+                                            <div className="flex justify-between text-xs text-gray-500">
+                                                <span>Création</span>
+                                                <span className={run.status === 'pending_agency' ? "font-bold text-blue-600" : ""}>Agence</span>
+                                                <span className={run.status === 'pending_general' ? "font-bold text-blue-600" : ""}>Direction</span>
+                                                <span className={run.status === 'finance_validated' ? "font-bold text-blue-600" : ""}>Finance</span>
+                                                <span>Terminé</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {pendingTracking?.employees.map((emp: any) => (
+                                    <div key={emp.id} className="relative border-t pt-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-semibold text-gray-900">
+                                                Recrutement: {emp.firstName} {emp.lastName}
+                                            </h4>
+                                            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 capitalize">
+                                                En Attente Validation
+                                            </span>
+                                        </div>
+                                        {/* Simple Progress for Employee since flow is simpler */}
+                                        <div className="relative">
+                                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
+                                                <div style={{ width: '50%' }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-amber-500"></div>
+                                            </div>
+                                            <div className="flex justify-between text-xs text-gray-500">
+                                                <span>Saisie RH</span>
+                                                <span className="font-bold text-amber-600">Validation Direction/Agence</span>
+                                                <span>Actif</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </div>

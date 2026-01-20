@@ -13,7 +13,17 @@ export async function requirePermission(request: Request, permission: string) {
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { id: true, username: true, role: true, permissions: true }
+        select: {
+            id: true,
+            username: true,
+            role: true,
+            permissions: true,
+            employee: {
+                select: {
+                    photo: true
+                }
+            }
+        }
     });
 
     if (!user) {

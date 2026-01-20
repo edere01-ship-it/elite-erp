@@ -13,7 +13,7 @@ export const { getSession, commitSession, destroySession } =
         cookie: {
             name: "__session",
             httpOnly: true,
-            maxAge: 60 * 60 * 24 * 7, // 7 days
+            maxAge: 30 * 60, // 30 minutes
             path: "/",
             sameSite: "lax",
             secrets: ["s3cr3t_key_change_this_later"],

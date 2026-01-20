@@ -6,6 +6,7 @@ import { prisma } from "~/db.server";
 import { DollarSign, FileText, CreditCard, TrendingUp, TrendingDown, Plus, AlertCircle } from "lucide-react";
 import { type ActionFunctionArgs, redirect, useSubmit, useActionData, Form } from "react-router";
 import { useState, useEffect } from "react";
+import { translateStatus } from "~/lib/utils";
 
 export async function action({ request }: ActionFunctionArgs) {
     const formData = await request.formData();
@@ -250,7 +251,7 @@ export default function AgencyFinance() {
                                     <div className="font-semibold">{formatCurrency(inv.total)}</div>
                                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium capitalize 
                                         ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                        {inv.status}
+                                        {translateStatus(inv.status)}
                                     </span>
                                 </div>
                             </li>
@@ -276,7 +277,7 @@ export default function AgencyFinance() {
                                     <div className="font-semibold text-red-600">-{formatCurrency(exp.amount)}</div>
                                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium capitalize 
                                         ${exp.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                        {exp.status}
+                                        {translateStatus(exp.status)}
                                     </span>
                                 </div>
                             </li>

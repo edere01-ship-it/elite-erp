@@ -168,6 +168,8 @@ export async function createAuditLog(data: {
     details: string;
     module: string;
     userId: string;
+    ipAddress?: string;
+    userAgent?: string;
 }) {
     return prisma.auditLog.create({ data });
 }

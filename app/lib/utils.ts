@@ -26,6 +26,9 @@ export function translateStatus(status: string): string {
         'active': 'Actif',
         'pending': 'En attente',
         'item_rejected': 'Rejeté',
+        'rejected': 'Rejeté',
+        'submitted': 'Soumis',
+        'approved': 'Approuvé',
         'terminated': 'Terminé',
         'on_leave': 'En congé'
     };

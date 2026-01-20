@@ -47,13 +47,19 @@ export async function action({ request }: Route.ActionArgs) {
         } as any
     });
 
+    // Extract IP and UA
+    const ipAddress = request.headers.get("X-Forwarded-For") || request.headers.get("x-real-ip") || "Unknown";
+    const userAgent = request.headers.get("User-Agent") || "Unknown";
+
     // Log login action
     await prisma.auditLog.create({
         data: {
             action: "login",
             details: "Connexion utilisateur",
             userId: user.id,
-            module: "auth"
+            module: "auth",
+            ipAddress,
+            userAgent
         }
     });
 

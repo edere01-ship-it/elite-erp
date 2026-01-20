@@ -43,8 +43,8 @@ model User {
   sentMessages     Message[] @relation("SentMessages")
   receivedMessages Message[] @relation("ReceivedMessages")
 
-  organizedMeetings     Meeting[] @relation("OrganizedMeetings")
-  participatingMeetings Meeting[] @relation("MeetingParticipants")
+  organizedMeetings     Meeting[]      @relation("OrganizedMeetings")
+  participatingMeetings Meeting[]      @relation("MeetingParticipants")
   notifications         Notification[]
 }
 
@@ -73,17 +73,17 @@ model Agency {
 // --- HR ---
 
 model Employee {
-  id         String   @id @default(uuid())
-  matricule  String?  @unique
-  firstName  String
-  lastName   String
-  position   String
-  department String
-  email      String   @unique
-  phone      String
-  startDate  DateTime
-  salary     Float
-  status     String   @default("active") // active, on_leave, terminated
+  id              String   @id @default(uuid())
+  matricule       String?  @unique
+  firstName       String
+  lastName        String
+  position        String
+  department      String
+  email           String   @unique
+  phone           String
+  startDate       DateTime
+  salary          Float
+  status          String   @default("active") // active, on_leave, terminated
   rejectionReason String?
 
   agencyId String?
@@ -172,26 +172,38 @@ model Client {
   contracts  Contract[]
   invoices   Invoice[]
   legalCases LegalCase[]
+
+  // Real Estate Relations
+  ownedLots          DevelopmentLot[] // Lots bought by this client
+  subscriptions      Subscription[] // Pre-financing subscriptions
+  occupiedProperties Property[]       @relation("PropertyOccupant") // Tenant of built properties
 }
 
 // --- Properties ---
 
 model Property {
   id          String   @id @default(uuid())
+  reference   String? // e.g. "VILLA-001"
   title       String
   description String?
   price       Float
   type        String // apartment, villa, land, commercial
-  status      String // available, sold, rented
+  status      String // available, sold, rented, maintenance
   address     String
   city        String
   area        Float
   rooms       Int
   images      String[]
   features    String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
 
+  // Financials for Built Properties
+  rentalValue Float? // Montant du loyer si location
+  usage       String? // habitation, commercial, mixe
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
   developmentId String?
   development   LandDevelopment? @relation(fields: [developmentId], references: [id])
   visits        Visit[]
@@ -200,19 +212,103 @@ model Property {
 
   agencyId String?
   agency   Agency? @relation(fields: [agencyId], references: [id])
+
+  occupantId String?
+  occupant   Client? @relation("PropertyOccupant", fields: [occupantId], references: [id])
 }
 
-model LandDevelopment {
-  id            String @id @default(uuid())
-  name          String
-  location      String
-  totalArea     Float
-  totalLots     Int
-  availableLots Int
-  progress      Int // 0-100
-  status        String
+// --- Land Development (Projets de Lotissement) ---
 
-  properties Property[]
+model LandDevelopment {
+  id       String @id @default(uuid())
+  name     String
+  location String
+
+  // Legal & Land Details
+  legalTitle  String? // ACD, Attestation Villageoise, CFC
+  titleNumber String? // Numéro du titre
+  landOwner   String? // Nom du détenteur du titre (si différent de l'agence)
+  boundaries  String? // Limites / Bornage description
+  legalStatus String? // Libre, En litige, Hypothéqué
+
+  // Project Scope
+  totalArea Float
+  totalLots Int
+
+  // Financials
+  acquisitionCost   Float @default(0) // Coût du terrain
+  developmentBudget Float @default(0) // Coût aménagement (VRD, etc)
+  lotUnitCost       Float @default(0) // Coût de revient par lot
+  expectedMargin    Float @default(0) // Marge prévisionnelle
+
+  status    String // planned, in_progress, completed, paused
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  properties    Property[] // Linked built properties (if any)
+  lots          DevelopmentLot[]
+  phases        ProjectPhase[]
+  subscriptions Subscription[]
+}
+
+model DevelopmentLot {
+  id        String @id @default(uuid())
+  lotNumber String // e.g. "Ilot 4, Lot 12"
+  area      Float // m²
+  type      String // habitation, commercial, mixe
+  status    String // available, reserved, sold, pre_financed
+  price     Float // Prix de vente public
+
+  features String[] // Specificites du lot (angle, voie bitumée...)
+
+  developmentId String
+  development   LandDevelopment @relation(fields: [developmentId], references: [id])
+
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
+
+  subscription Subscription? // If pre-financed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectPhase {
+  id        String    @id @default(uuid())
+  name      String // Acquisition, Bornage, Lotissement, Aménagement, Commercialisation...
+  startDate DateTime
+  endDate   DateTime?
+  status    String // pending, in_progress, completed, delayed
+  progress  Int       @default(0) // %
+  notes     String?
+
+  developmentId String
+  development   LandDevelopment @relation(fields: [developmentId], references: [id])
+}
+
+model Subscription {
+  id              String @id @default(uuid())
+  // Pre-financing Contract
+  depositAmount   Float
+  totalAmount     Float
+  paymentSchedule Json? // Stores schedule details
+  status          String // active, completed, defaulted, cancelled
+  penalties       Float  @default(0)
+
+  contractDate DateTime @default(now())
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
+
+  developmentId String
+  development   LandDevelopment @relation(fields: [developmentId], references: [id])
+
+  lotId String?         @unique
+  lot   DevelopmentLot? @relation(fields: [lotId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // --- Visits ---
@@ -268,16 +364,16 @@ model Milestone {
 // --- Finance ---
 
 model Transaction {
-  id            String   @id @default(uuid())
-  date          DateTime
-  description   String
-  amount        Float
-  type          String // income, expense
-  category      String
-  status        String // pending, completed, cancelled
+  id              String   @id @default(uuid())
+  date            DateTime
+  description     String
+  amount          Float
+  type            String // income, expense
+  category        String
+  status          String // pending, completed, cancelled
   rejectionReason String?
-  reference     String?
-  paymentMethod String
+  reference       String?
+  paymentMethod   String
 
   recordedBy  String?
   recorder    User?   @relation("TransactionRecorder", fields: [recordedBy], references: [id])
@@ -430,6 +526,8 @@ model AuditLog {
   details   String
   module    String?
   timestamp DateTime @default(now())
+  ipAddress String?
+  userAgent String?
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
