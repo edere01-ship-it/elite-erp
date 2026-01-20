@@ -9,6 +9,7 @@ export default [
             route("properties", "routes/agency.properties.tsx"),
             route("finance", "routes/agency.finance.tsx"),
             route("projects", "routes/agency.projects.tsx"),
+            route("projects/:id", "routes/agency.projects.$id.tsx"),
             route("commercial", "routes/agency.commercial.tsx"),
             route("validations", "routes/agency.validations.tsx"),
         ]),

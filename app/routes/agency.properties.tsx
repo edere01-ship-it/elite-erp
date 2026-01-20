@@ -38,12 +38,18 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function AgencyProperties() {
-    const { properties, agencyId } = useLoaderData<typeof loader>();
+    const { properties, agencyId, error } = useLoaderData<typeof loader>();
 
     const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
 
     return (
         <div className="space-y-6">
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+                    <strong className="font-bold">Erreur : </strong>
+                    <span className="block sm:inline">{error}</span>
+                </div>
+            )}
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-xl font-semibold flex items-center gap-2">
