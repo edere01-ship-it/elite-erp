@@ -19,22 +19,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     // Fetch ONLY Built Properties (those NOT part of a development OR explicitly flagged)
-    // For now, we assume properties with 'developmentId' are part of a project, but maybe we want to see them too?
-    // The requirement is to differentiate. Let's show ALL properties but group them or just show "Portefeuille Agence".
-    // "Biens Construits" vs "Projets".
-    // We'll show all properties here, but highlight their status/type.
+    try {
+        const properties = await prisma.property.findMany({
+            where: {
+                agencyId: employee.agencyId
+            },
+            orderBy: { createdAt: 'desc' },
+            include: {
+                occupant: true
+            } as any
+        });
 
-    const properties = await prisma.property.findMany({
-        where: {
-            agencyId: employee.agencyId
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-            occupant: true // Include tenant info
-        } as any // Cast include to any to avoid TS error
-    });
-
-    return { properties, agencyId: employee.agencyId };
+        return { properties, agencyId: employee.agencyId, error: null };
+    } catch (e: any) {
+        console.error("Loader Error in Properties:", e);
+        return {
+            properties: [],
+            agencyId: employee.agencyId,
+            error: e.message || "Erreur de chargement des biens"
+        };
+    }
 }
 
 export default function AgencyProperties() {
