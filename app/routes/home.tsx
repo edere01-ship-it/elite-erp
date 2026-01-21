@@ -2,7 +2,21 @@ import type { Route } from "./+types/home";
 import { getSession } from "~/sessions.server";
 import { redirect, useLoaderData, Form, Link } from "react-router";
 import { getDashboardStats } from "~/services/dashboard.server";
-import { Building2, Home as HomeIcon, Users, HardHat, Wallet, MonitorCog, PiggyBank, ArrowUpRight, ArrowDownRight, Briefcase } from "lucide-react";
+import {
+  Building2,
+  Home as HomeIcon,
+  Users,
+  HardHat,
+  Wallet,
+  MonitorCog,
+  PiggyBank,
+  ArrowUpRight,
+  ArrowDownRight,
+  Briefcase,
+  CheckCircle2,
+  Clock
+} from "lucide-react";
+import { ClientOnly } from "~/components/ClientOnly";
 import { StatCard } from "~/components/dashboard/StatCard";
 import { SalesChart } from "~/components/dashboard/SalesChart";
 
@@ -259,7 +273,9 @@ export default function Home() {
 
       {/* Charts Section */}
       <div className="grid gap-6">
-        <SalesChart />
+        <ClientOnly fallback={<div className="h-[400px] w-full flex items-center justify-center text-gray-400">Chargement...</div>}>
+          {() => <SalesChart />}
+        </ClientOnly>
       </div>
     </div>
   );
