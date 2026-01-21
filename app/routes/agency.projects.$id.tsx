@@ -259,8 +259,8 @@ export default function ProjectDetail() {
                                             )}>{phase.status}</span>
                                         </div>
                                         <p className="text-sm text-gray-500 mt-1">
-                                            {new Date(phase.startDate).toLocaleDateString()}
-                                            {phase.endDate && ` - ${new Date(phase.endDate).toLocaleDateString()}`}
+                                            {new Date(phase.startDate).toLocaleDateString('fr-FR')}
+                                            {phase.endDate && ` - ${new Date(phase.endDate).toLocaleDateString('fr-FR')}`}
                                         </p>
                                         <div className="mt-2 text-sm text-gray-600">{phase.notes || "Pas de notes."}</div>
                                         <div className="mt-3 w-full bg-gray-200 rounded-full h-1.5">
@@ -313,7 +313,7 @@ export default function ProjectDetail() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {new Date(sub.contractDate).toLocaleDateString()}
+                                                {new Date(sub.contractDate).toLocaleDateString('fr-FR')}
                                             </td>
                                         </tr>
                                     ))}

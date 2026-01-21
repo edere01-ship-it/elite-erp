@@ -15,7 +15,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!employee || !employee.agencyId) {
-        throw new Response("Agence non trouvée", { status: 404 });
+        // Parent layout (agency.tsx) handles the UI for missing agency
+        return { properties: [], agencyId: "", error: null };
     }
 
     // Fetch ONLY Built Properties (those NOT part of a development OR explicitly flagged)

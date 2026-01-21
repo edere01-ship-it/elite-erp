@@ -15,7 +15,11 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: { agencyId: true }
     });
 
-    if (!employee?.agencyId) throw new Response("Unauthorized", { status: 403 });
+    if (!employee?.agencyId) {
+        // Parent layout (agency.tsx) handles the UI for missing agency
+        // We return empty data here to prevent loader crashes/console errors
+        return { projects: [], developments: [], error: null };
+    }
     const agencyId = employee.agencyId;
 
     // Fetch Construction Projects
