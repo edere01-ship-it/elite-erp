@@ -24,6 +24,7 @@ import {
     AreaChart,
     Area
 } from "recharts";
+import { ClientOnly } from "~/components/ClientOnly";
 
 export const meta: MetaFunction = () => {
     return [
@@ -465,17 +466,21 @@ export default function DirectionDashboard() {
                         <div className="bg-white rounded-lg shadow p-6">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">Performance des Agences</h3>
                             <div className="h-80" style={{ height: "320px", width: "100%" }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={agencyPerformance}>
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="name" />
-                                        <YAxis />
-                                        <Tooltip />
-                                        <Legend />
-                                        <Bar dataKey="turnover" name="Chiffre d'Affaires" fill="#4f46e5" />
-                                        <Bar dataKey="netResult" name="Résultat Net" fill="#10b981" />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm text-gray-500">Chargement du graphique...</div>}>
+                                    {() => (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={agencyPerformance}>
+                                                <CartesianGrid strokeDasharray="3 3" />
+                                                <XAxis dataKey="name" />
+                                                <YAxis />
+                                                <Tooltip />
+                                                <Legend />
+                                                <Bar dataKey="turnover" name="Chiffre d'Affaires" fill="#4f46e5" />
+                                                <Bar dataKey="netResult" name="Résultat Net" fill="#10b981" />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    )}
+                                </ClientOnly>
                             </div>
                         </div>
                     </div>

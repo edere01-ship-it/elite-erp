@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Building, TrendingUp, TrendingDown, DollarSign, Wallet } from "lucide-react";
 import { cn, formatCurrency } from "~/lib/utils";
 import { useState } from "react";
+import { ClientOnly } from "~/components/ClientOnly";
 
 interface AgencyPerformanceProps {
     performance: {
@@ -134,35 +135,39 @@ export function AgencyPerformanceDashboard({ performance }: AgencyPerformancePro
 
                 {viewMode === 'chart' ? (
                     <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <BarChart
-                                data={sortedPerformance}
-                                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                                onMouseMove={(state: any) => {
-                                    if (state.isTooltipActive) {
-                                        setHoveredIndex(state.activeTooltipIndex);
-                                    } else {
-                                        setHoveredIndex(null);
-                                    }
-                                }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(value) => `${value / 1000000}M`} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Bar dataKey="turnover" name="Chiffre d'Affaires" radius={[4, 4, 0, 0]} barSize={32}>
-                                    {sortedPerformance.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index === hoveredIndex ? '#2563eb' : '#3b82f6'} style={{ transition: 'all 0.3s ease' }} />
-                                    ))}
-                                </Bar>
-                                <Bar dataKey="expenses" name="Dépenses" radius={[4, 4, 0, 0]} barSize={32}>
-                                    {sortedPerformance.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={index === hoveredIndex ? '#dc2626' : '#ef4444'} style={{ transition: 'all 0.3s ease' }} />
-                                    ))}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <ClientOnly fallback={<div className="h-full w-full flex items-center justify-center text-sm text-gray-500">Chargement...</div>}>
+                            {() => (
+                                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                    <BarChart
+                                        data={sortedPerformance}
+                                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                                        onMouseMove={(state: any) => {
+                                            if (state.isTooltipActive) {
+                                                setHoveredIndex(state.activeTooltipIndex);
+                                            } else {
+                                                setHoveredIndex(null);
+                                            }
+                                        }}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} dy={10} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6b7280', fontSize: 12 }} tickFormatter={(value) => `${value / 1000000}M`} />
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.02)' }} />
+                                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                        <Bar dataKey="turnover" name="Chiffre d'Affaires" radius={[4, 4, 0, 0]} barSize={32}>
+                                            {sortedPerformance.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={index === hoveredIndex ? '#2563eb' : '#3b82f6'} style={{ transition: 'all 0.3s ease' }} />
+                                            ))}
+                                        </Bar>
+                                        <Bar dataKey="expenses" name="Dépenses" radius={[4, 4, 0, 0]} barSize={32}>
+                                            {sortedPerformance.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={index === hoveredIndex ? '#dc2626' : '#ef4444'} style={{ transition: 'all 0.3s ease' }} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            )}
+                        </ClientOnly>
                     </div>
                 ) : (
                     <div className="overflow-hidden rounded-xl border border-gray-100">
