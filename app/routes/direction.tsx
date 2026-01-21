@@ -2,7 +2,7 @@
 import { useLoaderData, redirect, Link, type LoaderFunctionArgs, type MetaFunction, type ActionFunctionArgs, useSubmit, Form, useNavigation } from "react-router";
 import { prisma } from "~/db.server";
 import { useState, useEffect } from "react";
-import { LayoutDashboard, CheckCircle, TrendingUp, Building, Users, Wallet, Briefcase, Plus, AlertCircle, X } from "lucide-react";
+import { LayoutDashboard, CheckCircle, TrendingUp, Building, Users, Wallet, Briefcase, Plus, AlertCircle, X, HardHat, Map } from "lucide-react";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { cn } from "~/lib/utils";
@@ -228,6 +228,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
         }
     });
 
+    const constructions = await prisma.constructionProject.findMany({
+        orderBy: { startDate: 'desc' },
+        include: { manager: true }
+    });
+
+    const developments = await prisma.landDevelopment.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+            _count: {
+                select: { lots: true, properties: true }
+            }
+        }
+    });
+
     // Process financial data for chart (e.g., last 6 months) -> Simplified grouping
     const chartData = [
         { name: 'Jan', revenus: 4000000, depenses: 2400000 },
@@ -246,12 +260,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
         agencyPerformance,
         chartData,
         recentDocuments,
-        agencies
+        agencies,
+        constructions,
+        developments
     };
 }
 
 export default function DirectionDashboard() {
-    const { stats, validations, validationHistory, financeStats, agencyPerformance, chartData, recentDocuments, agencies } = useLoaderData<typeof loader>();
+    const { stats, validations, validationHistory, financeStats, agencyPerformance, chartData, recentDocuments, agencies, constructions, developments } = useLoaderData<typeof loader>();
     const [activeTab, setActiveTab] = useState("dashboard");
 
     // Rejection Modal State
@@ -301,6 +317,7 @@ export default function DirectionDashboard() {
         { id: "finance", label: "Finances", icon: Wallet },
         { id: "hr", label: "Ressources Humaines", icon: Users },
         { id: "agencies", label: "Agences", icon: Building },
+        { id: "projects", label: "Projets", icon: HardHat },
     ];
 
     return (
@@ -799,44 +816,161 @@ export default function DirectionDashboard() {
                             />
                         </div>
                     </div>
+                </div>
+            )}
 
-                    {/* Modal */}
-                    {(isCreateModalOpen || editingAgency) && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-                            {/* Backdrop */}
-                            <div
-                                className="fixed inset-0 bg-gray-500/75 transition-opacity"
-                                aria-hidden="true"
-                                onClick={() => { setIsCreateModalOpen(false); setEditingAgency(null); }}
-                            />
+            {/* Tab Content: Projects */}
+            {activeTab === "projects" && (
+                <div className="space-y-6">
+                    {/* Lotissements */}
+                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <Map className="w-5 h-5 text-blue-600" />
+                                Lotissements & Terrains
+                            </h3>
+                            <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                {developments.length} Projets
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du Site</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localisation</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lots (Total/Vendus)</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {developments.length === 0 ? (
+                                        <tr><td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun projet de lotissement.</td></tr>
+                                    ) : developments.map((dev: any) => (
+                                        <tr key={dev.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{dev.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{dev.location}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {dev.totalLots} / <span className="text-green-600 font-bold">{dev._count?.lots ?? 0}</span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={cn("px-2 py-1 text-xs rounded-full font-bold uppercase",
+                                                    dev.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                                )}>
+                                                    {dev.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 hover:underline cursor-pointer">
+                                                <Link to={`/agency/projects/${dev.id}`}>Détails</Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-                            {/* Modal Panel */}
-                            <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
-                                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                                    <div className="sm:flex sm:items-start">
-                                        <div className="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                            <h3 className="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
-                                                {editingAgency ? "Modifier l'agence" : "Ajouter une nouvelle agence"}
-                                            </h3>
-                                            <div className="mt-4">
-                                                <AgencyForm
-                                                    defaultValues={editingAgency || undefined}
-                                                    isSubmitting={isSubmitting}
-                                                    onCancel={() => { setIsCreateModalOpen(false); setEditingAgency(null); }}
-                                                />
-                                            </div>
+                    {/* Constructions */}
+                    <div className="bg-white rounded-lg shadow overflow-hidden">
+                        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                <HardHat className="w-5 h-5 text-orange-600" />
+                                Chantiers & Construction
+                            </h3>
+                            <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                {constructions.length} Chantiers
+                            </span>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chantier</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progression</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {constructions.length === 0 ? (
+                                        <tr><td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">Aucun chantier en cours.</td></tr>
+                                    ) : constructions.map((proj: any) => (
+                                        <tr key={proj.id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-medium text-gray-900">{proj.name}</div>
+                                                <div className="text-xs text-gray-500">{proj.type}</div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {proj.manager?.firstName} {proj.manager?.lastName}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                                {proj.budget.toLocaleString()} CFA
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 w-32">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-full bg-gray-200 rounded-full h-2">
+                                                        <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${proj.progress}%` }}></div>
+                                                    </div>
+                                                    <span className="text-xs">{proj.progress}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={cn("px-2 py-1 text-xs rounded-full font-bold uppercase",
+                                                    proj.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                                        proj.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                                                )}>
+                                                    {proj.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal */}
+            {
+                (isCreateModalOpen || editingAgency) && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                        {/* Backdrop */}
+                        <div
+                            className="fixed inset-0 bg-gray-500/75 transition-opacity"
+                            aria-hidden="true"
+                            onClick={() => { setIsCreateModalOpen(false); setEditingAgency(null); }}
+                        />
+
+                        {/* Modal Panel */}
+                        <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+                            <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                        <h3 className="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
+                                            {editingAgency ? "Modifier l'agence" : "Ajouter une nouvelle agence"}
+                                        </h3>
+                                        <div className="mt-4">
+                                            <AgencyForm
+                                                defaultValues={editingAgency || undefined}
+                                                isSubmitting={isSubmitting}
+                                                onCancel={() => { setIsCreateModalOpen(false); setEditingAgency(null); }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
-
-        </div>
-    );
+                    </div>
+                )
+            }
+        </div >
+    )
 }
+
+
 
 export function ErrorBoundary({ error }: { error: unknown }) {
     console.error("Direction ErrorBoundary caught:", error);

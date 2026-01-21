@@ -167,3 +167,10 @@ export async function createSubscription(
         return sub;
     });
 }
+// --- Construction Projects ---
+
+export async function createConstructionProject(data: Prisma.ConstructionProjectCreateInput) {
+    return prisma.constructionProject.create({
+        data,
+    });
+}
