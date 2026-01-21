@@ -41,6 +41,18 @@ export const PERMISSIONS = {
     AGENCY_EMPLOYEES_MANAGE: "agency.employees.manage", // Create/Edit employees
     AGENCY_PROPERTIES_MANAGE: "agency.properties.manage", // Create/Edit properties
 
+    // Construction
+    CONSTRUCTION_VIEW: "construction.view",
+    CONSTRUCTION_MANAGE: "construction.manage",
+
+    // Documents (Archives)
+    DOCUMENTS_VIEW: "documents.view",
+    DOCUMENTS_MANAGE: "documents.manage",
+
+    // Legal
+    LEGAL_VIEW: "legal.view",
+    LEGAL_MANAGE: "legal.manage",
+
     // Global
     ADMIN: "admin.access" // Superuser
 };
@@ -102,6 +114,30 @@ export const MODULES = [
             { id: PERMISSIONS.COMMERCIAL_EDIT, label: "Modifier Clients" },
             { id: PERMISSIONS.VISITS_VIEW, label: "Voir Visites" },
             { id: PERMISSIONS.VISITS_CREATE, label: "Créer Visites" },
+        ]
+    },
+    {
+        id: "construction",
+        label: "Construction & Chantiers",
+        permissions: [
+            { id: PERMISSIONS.CONSTRUCTION_VIEW, label: "Voir Projets" },
+            { id: PERMISSIONS.CONSTRUCTION_MANAGE, label: "Gérer Projets" },
+        ]
+    },
+    {
+        id: "documents",
+        label: "Documents & Archives",
+        permissions: [
+            { id: PERMISSIONS.DOCUMENTS_VIEW, label: "Consulter Archives" },
+            { id: PERMISSIONS.DOCUMENTS_MANAGE, label: "Gérer/Archiver" },
+        ]
+    },
+    {
+        id: "legal",
+        label: "Juridique & Contentieux",
+        permissions: [
+            { id: PERMISSIONS.LEGAL_VIEW, label: "Voir Dossiers" },
+            { id: PERMISSIONS.LEGAL_MANAGE, label: "Gérer Contentieux" },
         ]
     },
     {
