@@ -26,16 +26,27 @@ export async function loader({ request }: LoaderFunctionArgs) {
         include: { agency: true }
     });
 
-    if (!employee || !employee.agencyId) {
+    let agencyId = employee?.agencyId;
+
+    // Admin Fallback: If no agency linked, use the first one available
+    if (!agencyId && (user.role === "admin" || user.permissions.includes("admin.access"))) {
+        const firstAgency = await prisma.agency.findFirst();
+        if (firstAgency) agencyId = firstAgency.id;
+    }
+
+    if (!agencyId) {
         return { user, agency: null, stats: null, enhancedStats: null };
     }
 
     const [stats, enhancedStats] = await Promise.all([
-        getAgencyStats(employee.agencyId),
-        getAgencyEnhancedStats(employee.agencyId)
+        getAgencyStats(agencyId),
+        getAgencyEnhancedStats(agencyId)
     ]);
 
-    return { user, agency: employee.agency, stats, enhancedStats };
+    // Fetch agency details if we only had the ID
+    const agency = employee?.agency ?? await prisma.agency.findUnique({ where: { id: agencyId } });
+
+    return { user, agency, stats, enhancedStats };
 }
 
 export default function AgencyDashboard() {
