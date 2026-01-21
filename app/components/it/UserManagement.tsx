@@ -34,10 +34,9 @@ export function UserManagement({
             if (isModalOpen && !editingUser) {
                 // Reset for creation if opened without editing user
                 setSelectedPermissions([]);
-                // editingUser is already null or set by edit click
             }
         }
-    }, [isModalOpen, editingUser]);
+    }, [isModalOpen]);
 
     const togglePermission = (perm: string) => {
         if (selectedPermissions.includes(perm)) {

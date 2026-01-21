@@ -48,13 +48,13 @@ export function MessengerPanel({ isOpen, onClose }: MessengerPanelProps) {
 
         eventSource.addEventListener("message", (event) => {
             const newMessage = JSON.parse(event.data);
-            // We could update local state directly, or just re-fetch to keep it simple and consistent
-            // optimizing: strictly, we should append to 'messages.received' or 'messages.sent' locally.
-            // For MVP speed:
             fetcher.load("/api/messages");
-
-            // Notification sound could go here
         });
+
+        eventSource.onerror = (err) => {
+            console.error("SSE Error:", err);
+            eventSource.close();
+        };
 
         return () => {
             eventSource.close();
