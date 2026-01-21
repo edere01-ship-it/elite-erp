@@ -107,18 +107,24 @@ export const MODULES = [
     },
     {
         id: "commercial",
-        label: "Commercial (Clients/Visites)",
+        label: "Commercial (Clients)",
         permissions: [
             { id: PERMISSIONS.COMMERCIAL_VIEW, label: "Voir Clients" },
             { id: PERMISSIONS.COMMERCIAL_CREATE, label: "Créer Clients" },
             { id: PERMISSIONS.COMMERCIAL_EDIT, label: "Modifier Clients" },
+        ]
+    },
+    {
+        id: "visits",
+        label: "Visites & Rendez-vous",
+        permissions: [
             { id: PERMISSIONS.VISITS_VIEW, label: "Voir Visites" },
             { id: PERMISSIONS.VISITS_CREATE, label: "Créer Visites" },
         ]
     },
     {
         id: "construction",
-        label: "Construction & Chantiers",
+        label: "Projets Immobiliers (Chantiers)",
         permissions: [
             { id: PERMISSIONS.CONSTRUCTION_VIEW, label: "Voir Projets" },
             { id: PERMISSIONS.CONSTRUCTION_MANAGE, label: "Gérer Projets" },
