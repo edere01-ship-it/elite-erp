@@ -22,31 +22,38 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
     const agencyId = employee.agencyId;
 
-    // Fetch Construction Projects
-    const projects = await prisma.constructionProject.findMany({
-        where: {
-            manager: {
-                employee: {
-                    agencyId: agencyId
-                }
-            }
-        },
-        include: { manager: { include: { employee: true } } },
-        orderBy: { startDate: 'desc' }
-    });
+    let projects: any[] = [];
+    let developments: any[] = [];
+    let error: string | null = null;
 
-    // Fetch Land Developments
     try {
-        const developments = await getLandDevelopments();
-        return { projects, developments, error: null };
+        // Fetch Construction Projects
+        projects = await prisma.constructionProject.findMany({
+            where: {
+                manager: {
+                    employee: {
+                        agencyId: agencyId
+                    }
+                }
+            },
+            include: { manager: { include: { employee: true } } },
+            orderBy: { startDate: 'desc' }
+        });
     } catch (e: any) {
-        console.error("Loader Error:", e);
-        return {
-            projects,
-            developments: [],
-            error: e.message || "Erreur de chargement des données"
-        };
+        console.error("Projects Fetch Error:", e);
+        error = "Erreur chargement chantiers: " + (e.message || "Unknown");
     }
+
+    try {
+        // Fetch Land Developments
+        developments = await getLandDevelopments();
+    } catch (e: any) {
+        console.error("Developments Fetch Error:", e);
+        // Append error if one already exists
+        error = error ? `${error} | Lotissements: ${e.message}` : `Erreur lotissements: ${e.message}`;
+    }
+
+    return { projects, developments, error };
 }
 
 export default function AgencyProjects() {
