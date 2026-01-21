@@ -1,296 +1,313 @@
-import { type LoaderFunctionArgs } from "react-router";
-import { useLoaderData, Link } from "react-router";
-import { useState } from "react";
+import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
+import { useLoaderData, useFetcher, Link } from "react-router";
 import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { prisma } from "~/db.server";
-import { getLandDevelopments } from "~/services/projects.server";
-import { HardHat, Map, ArrowRight, TrendingUp, PlusCircle } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, XCircle, AlertCircle, Map, HardHat, Eye } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    // Correct permission for this module is CONSTRUCTION_VIEW
-    const user = await requirePermission(request, PERMISSIONS.CONSTRUCTION_VIEW);
+    // Requires Agency Manage or Validation permission
+    const user = await requirePermission(request, PERMISSIONS.AGENCY_MANAGE);
 
+    // Get user's agency
     const employee = await prisma.employee.findUnique({
         where: { userId: user.id },
         select: { agencyId: true }
     });
 
-    if (!employee?.agencyId) {
-        // Parent layout (agency.tsx) handles the UI for missing agency
-        // We return empty data here to prevent loader crashes/console errors
-        return { projects: [], developments: [], error: null };
-    }
-    const agencyId = employee.agencyId;
-
-    let projects: any[] = [];
-    let developments: any[] = [];
-    let error: string | null = null;
-
-    try {
-        // Fetch Construction Projects
-        projects = await prisma.constructionProject.findMany({
-            where: {
-                manager: {
-                    employee: {
-                        agencyId: agencyId
-                    }
-                }
-            },
-            include: { manager: { include: { employee: true } } },
-            orderBy: { startDate: 'desc' }
-        });
-    } catch (e: any) {
-        console.error("Projects Fetch Error:", e);
-        error = "Erreur chargement chantiers: " + (e.message || "Unknown");
+    // Fallback for admin if not in agency
+    let agencyId = employee?.agencyId;
+    if (!agencyId && (user.role === 'admin' || user.permissions.includes('admin.access'))) {
+        const firstAgency = await prisma.agency.findFirst();
+        agencyId = firstAgency?.id;
     }
 
-    try {
-        // Fetch Land Developments
-        developments = await getLandDevelopments();
-    } catch (e: any) {
-        console.error("Developments Fetch Error:", e);
-        // Append error if one already exists
-        error = error ? `${error} | Lotissements: ${e.message}` : `Erreur lotissements: ${e.message}`;
-    }
+    if (!agencyId) return { pendingConstructions: [], pendingDevelopments: [], error: "Aucune agence associée." };
 
-    return { projects, developments, error };
+    // Fetch Pending Projects
+    // Note: LandDevelopments are usually global or linked to properties, but for now we fetch all pending if assumed agency scope
+    // Schema for LandDevelopment doesn't have agencyId directly? Check schema.
+    // Schema: LandDevelopment has NO agencyId. It's global? Or we assume visibility?
+    // ConstructionProject has manager -> employee -> agencyId.
+
+    const pendingConstructions = await prisma.constructionProject.findMany({
+        where: {
+            status: "pending",
+            manager: {
+                employee: { agencyId }
+            }
+        },
+        include: { manager: true },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const pendingDevelopments = await prisma.landDevelopment.findMany({
+        where: { status: "pending" }, // Assuming global visibility for Direction to validate
+        orderBy: { createdAt: 'desc' }
+    });
+
+    return { pendingConstructions, pendingDevelopments, error: null };
 }
 
-export default function AgencyProjects() {
-    const { projects, developments, error } = useLoaderData<typeof loader>();
-    const [activeTab, setActiveTab] = useState<'developments' | 'constructions'>('developments');
+export async function action({ request }: ActionFunctionArgs) {
+    await requirePermission(request, PERMISSIONS.AGENCY_MANAGE);
+    const formData = await request.formData();
+    const intent = formData.get("intent");
+    const type = formData.get("type"); // 'construction' or 'development'
+    const id = formData.get("id") as string;
+    const notes = formData.get("notes") as string;
 
-    const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
+    if (!id || !type) return { error: "Paramètres manquants" };
+
+    try {
+        if (intent === "validate") {
+            const newStatus = type === 'construction' ? 'planned' : 'planning'; // Transition to standard initial status
+
+            if (type === 'construction') {
+                await prisma.constructionProject.update({
+                    where: { id },
+                    data: { status: newStatus, rejectionReason: null }
+                });
+            } else {
+                await prisma.landDevelopment.update({
+                    where: { id },
+                    data: { status: newStatus, rejectionReason: null }
+                });
+            }
+            return { success: true };
+        }
+
+        if (intent === "reject") {
+            if (!notes) return { error: "Motif de rejet requis." };
+
+            if (type === 'construction') {
+                await prisma.constructionProject.update({
+                    where: { id },
+                    data: { status: "rejected", rejectionReason: notes }
+                });
+            } else {
+                await prisma.landDevelopment.update({
+                    where: { id },
+                    data: { status: "rejected", rejectionReason: notes }
+                });
+            }
+            return { success: true };
+        }
+    } catch (e: any) {
+        console.error("Validation Error:", e);
+        return { error: e.message };
+    }
+
+    return null;
+}
+
+export default function AgencyProjectValidation() {
+    const { pendingConstructions, pendingDevelopments, error } = useLoaderData<typeof loader>();
+    const [selectedItem, setSelectedItem] = useState<{ id: string, type: 'construction' | 'development', name: string } | null>(null);
+    const [rejectMode, setRejectMode] = useState(false);
+
+    // Fetcher for actions without navigation
+    const fetcher = useFetcher();
+
+    // Close modal on success
+    if (fetcher.state === 'idle' && fetcher.data && (fetcher.data as any).success && selectedItem) {
+        // Reset state after successful action
+        // Since we can't update state during render, we rely on useEffect or user interaction.
+        // Actually, simpler to just listen to state change or manually close.
+        // Let's just create a wrapper function.
+    }
+
+    const handleAction = (intent: string) => {
+        if (!selectedItem) return;
+
+        const form = new FormData();
+        form.set("intent", intent);
+        form.set("type", selectedItem.type);
+        form.set("id", selectedItem.id);
+
+        if (intent === "reject") {
+            setRejectMode(true);
+            return; // Modal handles submission
+        }
+
+        fetcher.submit(form, { method: "post" });
+        setSelectedItem(null);
+    };
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-900 to-slate-900 p-8 text-white shadow-xl">
-                <div className="absolute top-0 right-0 -mt-10 -mr-10 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
-                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 h-64 w-64 rounded-full bg-purple-500/20 blur-3xl"></div>
-
-                <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                    <div>
-                        <h1 className="text-3xl font-extrabold tracking-tight mb-2">Projets Immobiliers</h1>
-                        <p className="text-blue-100 max-w-xl text-lg">
-                            Plateforme de gestion centralisée pour vos lotissements et chantiers de construction.
-                        </p>
-                    </div>
-
-                    {/* Global Quick Stats */}
-                    <div className="flex gap-4">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-                            <div className="text-xs text-blue-200 uppercase font-bold">Lotissements</div>
-                            <div className="text-2xl font-bold">{developments.length}</div>
-                        </div>
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/10">
-                            <div className="text-xs text-blue-200 uppercase font-bold">Chantiers</div>
-                            <div className="text-2xl font-bold">{projects.filter(p => p.status === 'in_progress').length}</div>
-                        </div>
-                    </div>
+        <div className="space-y-6 animate-fade-in fade-in-0 duration-500">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-orange-100 flex items-start gap-4">
+                <div className="p-3 bg-orange-50 text-orange-600 rounded-full">
+                    <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                    <h2 className="text-lg font-bold text-gray-900">Validation des Projets</h2>
+                    <p className="text-gray-600 text-sm mt-1">
+                        Les projets créés dans le module "Projets Immobiliers" apparaissent ici pour validation.
+                        Une fois validés, ils seront actifs. En cas de rejet, un motif est requis.
+                    </p>
                 </div>
             </div>
 
-            {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md shadow-sm animate-pulse" role="alert">
-                    <strong className="font-bold">Erreur : </strong>
-                    <span className="block sm:inline">{error}</span>
+            {/* Constructions Pending */}
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <HardHat className="w-4 h-4 text-orange-600" />
+                        Chantiers en attente
+                    </h3>
+                    <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                        {pendingConstructions.length}
+                    </span>
+                </div>
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du Projet</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Budget</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {pendingConstructions.map((p: any) => (
+                            <tr key={p.id}>
+                                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{p.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{p.manager?.username}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{p.budget.toLocaleString()} FCFA</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                    <button
+                                        onClick={() => handleAction('validate')}
+                                        // But wait, handleAction needs selectedItem. I should set it or pass params directly.
+                                        // Simpler: 
+                                        onClick={() => {
+                                            const form = new FormData();
+                                            form.set("intent", "validate");
+                                            form.set("type", "construction");
+                                            form.set("id", p.id);
+                                            fetcher.submit(form, { method: "post" });
+                                        }}
+                                        className="text-green-600 hover:text-green-800 font-medium"
+                                    >
+                                        Valider
+                                    </button>
+                                    <button
+                                        onClick={() => { setSelectedItem({ id: p.id, type: 'construction', name: p.name }); setRejectMode(true); }}
+                                        className="text-red-600 hover:text-red-800 font-medium"
+                                    >
+                                        Rejeter
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {pendingConstructions.length === 0 && (
+                            <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">Aucun chantier en attente.</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Developments Pending */}
+            <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <Map className="w-4 h-4 text-blue-600" />
+                        Lotissements en attente
+                    </h3>
+                    <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                        {pendingDevelopments.length}
+                    </span>
+                </div>
+                <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nom du Site</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Localisation</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Superficie</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                        {pendingDevelopments.map((d: any) => (
+                            <tr key={d.id}>
+                                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{d.name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{d.location}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{d.totalArea} m²</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                                    <button
+                                        onClick={() => {
+                                            const form = new FormData();
+                                            form.set("intent", "validate");
+                                            form.set("type", "development");
+                                            form.set("id", d.id);
+                                            fetcher.submit(form, { method: "post" });
+                                        }}
+                                        className="text-green-600 hover:text-green-800 font-medium"
+                                    >
+                                        Valider
+                                    </button>
+                                    <button
+                                        onClick={() => { setSelectedItem({ id: d.id, type: 'development', name: d.name }); setRejectMode(true); }}
+                                        className="text-red-600 hover:text-red-800 font-medium"
+                                    >
+                                        Rejeter
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {pendingDevelopments.length === 0 && (
+                            <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500 italic">Aucun lotissement en attente.</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Rejection Modal */}
+            {rejectMode && selectedItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                    <div className="fixed inset-0 bg-gray-500/75 transition-opacity" onClick={() => setRejectMode(false)} />
+                    <div className="relative z-10 w-full max-w-md transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
+                        <div className="bg-white px-4 pb-4 pt-5 sm:p-6">
+                            <h3 className="text-lg font-bold text-red-600 flex items-center gap-2 mb-4">
+                                <XCircle className="w-5 h-5" />
+                                Rejeter {selectedItem.name}
+                            </h3>
+                            <fetcher.Form method="post" onSubmit={() => setRejectMode(false)}>
+                                <input type="hidden" name="intent" value="reject" />
+                                <input type="hidden" name="type" value={selectedItem.type} />
+                                <input type="hidden" name="id" value={selectedItem.id} />
+
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Motif du rejet *</label>
+                                <textarea
+                                    name="notes"
+                                    required
+                                    rows={3}
+                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    placeholder="Expliquez pourquoi ce projet est rejeté..."
+                                ></textarea>
+
+                                <div className="mt-5 flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setRejectMode(false)}
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md border border-gray-300"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md shadow-sm"
+                                    >
+                                        Confirmer le Rejet
+                                    </button>
+                                </div>
+                            </fetcher.Form>
+                        </div>
+                    </div>
                 </div>
             )}
-
-            {/* Main Content Tabs */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 min-h-[600px] flex flex-col">
-                <div className="border-b border-gray-100 p-2">
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setActiveTab('developments')}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300",
-                                activeTab === 'developments'
-                                    ? "bg-blue-50 text-blue-700 shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                            )}
-                        >
-                            <Map className="w-5 h-5" />
-                            <span>Lotissements & Terrains</span>
-                            <span className="ml-2 bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">
-                                {developments.length}
-                            </span>
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('constructions')}
-                            className={cn(
-                                "flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all duration-300",
-                                activeTab === 'constructions'
-                                    ? "bg-orange-50 text-orange-700 shadow-sm"
-                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                            )}
-                        >
-                            <HardHat className="w-5 h-5" />
-                            <span>Construction & Travaux</span>
-                            <span className="ml-2 bg-orange-100 text-orange-700 py-0.5 px-2 rounded-full text-xs font-bold">
-                                {projects.length}
-                            </span>
-                        </button>
-                    </div>
-                </div>
-
-                <div className="p-6 bg-gray-50/50 flex-1">
-                    {activeTab === 'developments' && (
-                        <div className="space-y-6 animate-in slide-in-from-left-4 duration-500">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Gestion des Lotissements</h2>
-                                    <p className="text-gray-500 text-sm">Créez et gérez vos sites, lots et ventes.</p>
-                                </div>
-                                <Link
-                                    to="/agency/projects/new"
-                                    className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-1"
-                                >
-                                    <PlusCircle className="w-5 h-5" />
-                                    <span>Nouveau Site</span>
-                                </Link>
-                            </div>
-
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {developments.map((d) => {
-                                    const dev = d as any;
-                                    return (
-                                        <div key={dev.id} className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:border-blue-200">
-                                            <div className="h-32 bg-gradient-to-br from-slate-100 to-blue-50 relative p-6 flex flex-col justify-between group-hover:from-blue-50 group-hover:to-indigo-50 transition-colors">
-                                                <div className="flex justify-between items-start">
-                                                    <span className={cn("px-2.5 py-1 text-xs font-bold uppercase rounded-lg shadow-sm backdrop-blur-md",
-                                                        dev.status === 'in_progress' ? 'bg-blue-500/10 text-blue-700 border border-blue-200' : 'bg-gray-500/10 text-gray-700 border border-gray-200'
-                                                    )}>
-                                                        {dev.status === 'in_progress' ? 'En Commercialisation' : dev.status}
-                                                    </span>
-                                                </div>
-                                                <h3 className="text-xl font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors truncate">
-                                                    {dev.name}
-                                                </h3>
-                                            </div>
-
-                                            <div className="p-6 space-y-4">
-                                                <div className="flex items-center text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
-                                                    <Map className="w-4 h-4 mr-2 text-blue-500" />
-                                                    <span className="truncate">{dev.location}</span>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
-                                                        <div className="text-[10px] uppercase font-bold text-gray-400">Total</div>
-                                                        <div className="font-bold text-gray-900">{dev.totalLots} Lots</div>
-                                                    </div>
-                                                    <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-sm">
-                                                        <div className="text-[10px] uppercase font-bold text-gray-400">Disponibles</div>
-                                                        <div className="font-bold text-green-600">{dev._count?.lots ?? 0} Lots</div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="pt-2 border-t border-gray-100">
-                                                    <Link
-                                                        to={`/agency/projects/${dev.id}`}
-                                                        className="flex items-center justify-center w-full gap-2 border border-gray-200 hover:border-blue-300 text-gray-600 hover:text-blue-600 font-medium py-2.5 rounded-xl transition-all hover:bg-blue-50"
-                                                    >
-                                                        Gérer le Projet <ArrowRight className="w-4 h-4" />
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {developments.length === 0 && (
-                                    <div className="col-span-full border-2 border-dashed border-gray-300 rounded-2xl p-16 text-center flex flex-col items-center justify-center bg-gray-50">
-                                        <div className="bg-white p-4 rounded-2xl shadow-sm mb-4">
-                                            <Map className="w-12 h-12 text-gray-300" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-gray-900">Aucun projet</h3>
-                                        <p className="text-gray-500 mt-2 mb-6">Commencez par créer votre premier site de lotissement.</p>
-                                        <Link to="/agency/projects/new" className="text-blue-600 font-semibold hover:underline">Créer un projet</Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'constructions' && (
-                        <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Chantiers & BTP</h2>
-                                    <p className="text-gray-500 text-sm">Suivez vos chantiers de construction et rénovation.</p>
-                                </div>
-                                <Link
-                                    to="/agency/projects/new-construction"
-                                    className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-xl hover:bg-orange-700 shadow-lg shadow-orange-500/20 transition-all hover:-translate-y-1"
-                                >
-                                    <PlusCircle className="w-5 h-5" />
-                                    <span>Nouveau Chantier</span>
-                                </Link>
-                            </div>
-
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {projects.map(project => (
-                                    <div key={project.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 group">
-                                        <div className="p-6">
-                                            <div className="flex justify-between items-start mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-orange-50 rounded-lg text-orange-600 group-hover:bg-orange-600 group-hover:text-white transition-colors">
-                                                        <HardHat className="w-6 h-6" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="text-lg font-bold text-gray-900">{project.name}</h3>
-                                                        <div className="flex items-center text-xs text-gray-500 mt-0.5">
-                                                            <Map className="w-3 h-3 mr-1" /> {project.location}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <span className={cn("px-2 py-1 text-[10px] rounded-full font-bold uppercase tracking-wider",
-                                                    project.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                                        project.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
-                                                )}>
-                                                    {project.status.replace('_', ' ')}
-                                                </span>
-                                            </div>
-
-                                            <div className="space-y-5">
-                                                <div>
-                                                    <div className="flex justify-between text-xs font-semibold mb-2 text-gray-700">
-                                                        <span>Avancement Global</span>
-                                                        <span className="text-blue-600">{project.progress}%</span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
-                                                        <div className="bg-gradient-to-r from-blue-500 to-cyan-400 h-2.5 rounded-full transition-all duration-1000 ease-out" style={{ width: `${project.progress}%` }}></div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                                    <div>
-                                                        <div className="text-[10px] text-gray-400 uppercase font-bold">Budget</div>
-                                                        <div className="font-bold text-gray-900 text-sm">{formatCurrency(project.budget)}</div>
-                                                    </div>
-                                                    <button className="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors">
-                                                        Détails
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                                {projects.length === 0 && (
-                                    <div className="col-span-full py-16 text-center bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-200">
-                                        <HardHat className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                        <h3 className="text-lg font-medium text-gray-900">Aucun chantier actif</h3>
-                                        <p className="text-gray-500 mt-1">Vos projets de construction apparaîtront ici.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
     );
 }

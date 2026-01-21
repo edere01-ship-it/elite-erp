@@ -4,14 +4,18 @@ import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { createLandDevelopment } from "~/services/projects.server";
 import { Map, ArrowLeft, Save, Loader2, Building2, Ruler, DollarSign, FileText } from "lucide-react";
+import type { Route } from "./+types/construction.new-land";
 
 export async function loader({ request }: LoaderFunctionArgs) {
-    await requirePermission(request, PERMISSIONS.AGENCY_MANAGE);
+    // Requires CONSTRUCTION_MANAGE instead of AGENCY_MANAGE since it's a general project
+    // Or we keep AGENCY_MANAGE if it's strictly agency business?
+    // Let's use CONSTRUCTION_MANAGE for consistency in this module.
+    await requirePermission(request, PERMISSIONS.CONSTRUCTION_MANAGE);
     return null;
 }
 
 export async function action({ request }: ActionFunctionArgs) {
-    await requirePermission(request, PERMISSIONS.AGENCY_MANAGE);
+    await requirePermission(request, PERMISSIONS.CONSTRUCTION_MANAGE);
     const formData = await request.formData();
 
     const name = formData.get("name") as string;
@@ -51,10 +55,13 @@ export async function action({ request }: ActionFunctionArgs) {
             developmentBudget,
             lotUnitCost,
             expectedMargin,
-            status: "planning"
+            status: "pending"
         });
 
-        return redirect(`//agency/projects/${newProject.id}`);
+        // Redirect to main list or specific project detail?
+        // For now redirect to main list to confirm creation
+        return redirect(`/construction`);
+        // Or if we have a detail page: return redirect(`/construction/land/${newProject.id}`);
     } catch (error: any) {
         console.error("Creation Error:", error);
         return { error: "Erreur lors de la création du projet. Vérifiez les données." };
@@ -67,10 +74,10 @@ export default function NewLandDevelopment() {
     const isSubmitting = navigation.state === "submitting";
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-6 p-6 animate-fade-in">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link to="/agency/projects" className="p-2 hover:bg-white rounded-full transition-colors">
+                <Link to="/construction" className="p-2 hover:bg-white rounded-full transition-colors">
                     <ArrowLeft className="text-gray-500" />
                 </Link>
                 <div>
@@ -189,7 +196,7 @@ export default function NewLandDevelopment() {
 
                 {/* Footer Actions */}
                 <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-                    <Link to="/agency/projects" className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-300 rounded-md transition-all">
+                    <Link to="/construction" className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-300 rounded-md transition-all">
                         Annuler
                     </Link>
                     <button

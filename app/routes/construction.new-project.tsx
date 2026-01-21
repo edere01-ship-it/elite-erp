@@ -4,6 +4,7 @@ import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { createConstructionProject } from "~/services/projects.server";
 import { HardHat, ArrowLeft, Save, Loader2, MapPin, Calendar, Wallet } from "lucide-react";
+import type { Route } from "./+types/construction.new-project";
 
 export async function loader({ request }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.CONSTRUCTION_MANAGE);
@@ -33,13 +34,13 @@ export async function action({ request }: ActionFunctionArgs) {
             budget,
             startDate: new Date(startDateString),
             endDate: endDateString ? new Date(endDateString) : null,
-            status: "planned",
+            status: "pending",
             progress: 0,
             spent: 0,
             manager: { connect: { id: user.id } }
         });
 
-        return redirect(`/agency/projects`);
+        return redirect(`/construction`);
     } catch (error: any) {
         console.error("Creation Error:", error);
         return { error: "Erreur lors de la création du chantier. Vérifiez les données." };
@@ -52,10 +53,10 @@ export default function NewConstructionProject() {
     const isSubmitting = navigation.state === "submitting";
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in p-6">
             {/* Header */}
             <div className="flex items-center gap-4">
-                <Link to="/agency/projects" className="p-2 hover:bg-white rounded-full transition-colors">
+                <Link to="/construction" className="p-2 hover:bg-white rounded-full transition-colors">
                     <ArrowLeft className="text-gray-500" />
                 </Link>
                 <div>
@@ -135,7 +136,7 @@ export default function NewConstructionProject() {
 
                 {/* Footer Actions */}
                 <div className="bg-gray-50 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200">
-                    <Link to="/agency/projects" className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-300 rounded-md transition-all">
+                    <Link to="/construction" className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-white hover:text-gray-900 border border-transparent hover:border-gray-300 rounded-md transition-all">
                         Annuler
                     </Link>
                     <button

@@ -25,7 +25,7 @@ const navigation = [
     { name: "Ressources humaines", href: "/hr", icon: Users, permission: "hr.view" },
     { name: "Direction commerciale", href: "/commercial", icon: Briefcase, permission: "commercial.view" },
     { name: "Gestion des biens", href: "/agency/properties", icon: Home, permission: "agency.view" }, // Updated to new route
-    { name: "Projets Immobiliers", href: "/agency/projects", icon: HardHat, permission: "construction.view" }, // New Link
+    { name: "Projets Immobiliers", href: "/construction", icon: HardHat, permission: "construction.view" }, // New Link
     { name: "Visites & Rendez-vous", href: "/visits", icon: Calendar, permission: "visits.view" },
     { name: "Comptabilité & Finances", href: "/finance", icon: Calculator, permission: "finance.view" },
     { name: "Juridique", href: "/legal", icon: Scale, permission: "legal.view" },

@@ -241,7 +241,8 @@ model LandDevelopment {
   lotUnitCost       Float @default(0) // Coût de revient par lot
   expectedMargin    Float @default(0) // Marge prévisionnelle
 
-  status    String // planned, in_progress, completed, paused
+  rejectionReason   String? // Motif de rejet si applicable
+  status    String // pending, planned, in_progress, completed, paused, rejected
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
