@@ -2,7 +2,7 @@ import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import { Link, useLoaderData, useSubmit, Form } from "react-router";
 import { useState } from "react";
 import { Map, LayoutGrid, Calendar, FileText, CheckCircle2, AlertCircle, Plus, Users, DollarSign } from "lucide-react";
-import { prisma } from "~/db.server";
+
 import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { getLandDevelopmentById, getProjectStats, generateProjectLots, createProjectPhase } from "~/services/projects.server";
