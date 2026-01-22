@@ -10,11 +10,10 @@ import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import {
     getLandDevelopmentById, getProjectStats, generateProjectLots,
-    createProjectPhase, deleteLandDevelopment, updateLandDevelopment,
-    updateLot, createDevelopmentLot, deleteDevelopmentLot
+    deleteLandDevelopment, updateLandDevelopment,
+    updateLot, createDevelopmentLot, deleteDevelopmentLot, getClients
 } from "~/services/projects.server";
 import { cn } from "~/lib/utils";
-import { prisma } from "~/db.server";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.CONSTRUCTION_VIEW);
@@ -25,7 +24,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
     if (!project) throw new Response("Project Not Found", { status: 404 });
 
     const stats = await getProjectStats(id);
-    const clients = await prisma.client.findMany({ select: { id: true, firstName: true, lastName: true } });
+    const clients = await getClients();
 
     return { project, stats, clients };
 }

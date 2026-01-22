@@ -16,6 +16,13 @@ export async function updateLandDevelopment(id: string, data: Prisma.LandDevelop
     });
 }
 
+export async function getClients() {
+    return prisma.client.findMany({
+        select: { id: true, firstName: true, lastName: true },
+        orderBy: { lastName: 'asc' }
+    });
+}
+
 export async function deleteLandDevelopment(id: string) {
     // Transactional delete to ensure clean up
     return prisma.$transaction(async (tx) => {
