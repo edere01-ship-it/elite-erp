@@ -42,8 +42,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import InactivityHandler from "./components/InactivityHandler";
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <>
+      <InactivityHandler />
+      <Outlet />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
