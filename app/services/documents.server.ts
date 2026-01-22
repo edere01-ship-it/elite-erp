@@ -46,6 +46,7 @@ export async function createDocument({
     let folder = "others";
     if (category === "contracts") folder = "contracts";
     if (category === "invoices") folder = "invoices";
+    if (category === "plans") folder = "plans"; // Added plans folder
     if (category === "hr") folder = "hr";
     if (category === "hr_photos") folder = "hr/photos"; // New subfolder
     if (category === "hr_identity") folder = "hr/identity"; // New subfolder

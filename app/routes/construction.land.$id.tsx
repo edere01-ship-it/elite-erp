@@ -13,6 +13,7 @@ import {
     deleteLandDevelopment, updateLandDevelopment,
     updateLot, createDevelopmentLot, deleteDevelopmentLot, getClients
 } from "~/services/projects.server";
+import { createDocument } from "~/services/documents.server";
 import { cn } from "~/lib/utils";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
@@ -46,9 +47,31 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     if (intent === "update-project") {
         const name = formData.get("name") as string;
-        const planUrl = formData.get("planUrl") as string; // Simplified for now
-        await updateLandDevelopment(projectId, { name, planUrl });
+        // const planUrl = formData.get("planUrl") as string; // Removed in favor of document
+        await updateLandDevelopment(projectId, { name });
         return { success: true };
+    }
+
+    if (intent === "upload-plan") {
+        const file = formData.get("planFile") as File;
+        if (file && file.size > 0) {
+            const buffer = Buffer.from(await file.arrayBuffer());
+            const sizeMb = file.size / (1024 * 1024);
+            const sizeStr = sizeMb < 1 ? `${(file.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+
+            const doc = await createDocument({
+                name: `PLAN - ${file.name}`,
+                type: "plan",
+                size: sizeStr,
+                category: "plans",
+                ownerId: user.id,
+                fileBuffer: buffer
+            });
+
+            await updateLandDevelopment(projectId, { planDocumentId: doc.id });
+            return { success: true };
+        }
+        return { error: "Fichier invalide" };
     }
 
     if (intent === "add-lot") {
@@ -291,14 +314,56 @@ export default function LandDetail() {
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Map className="w-5 h-5 text-gray-500" /> Plan du Lotissement
                         </h3>
-                        {project.planUrl ? (
+                        {project.planDocument ? (
+                            <div className="space-y-4">
+                                <div className="relative border rounded-lg overflow-hidden bg-gray-50">
+                                    <img src={project.planDocument.path} alt="Plan" className="max-w-full h-auto mx-auto" />
+                                </div>
+                                <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <FileText className="w-4 h-4" />
+                                        <span className="font-medium">{project.planDocument.name}</span>
+                                        <span className="text-gray-400">({project.planDocument.size})</span>
+                                    </div>
+                                    <a
+                                        href={project.planDocument.path}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
+                                    >
+                                        Télécharger / Ouvrir
+                                    </a>
+                                </div>
+                            </div>
+                        ) : project.planUrl ? (
                             <div className="relative border rounded-lg overflow-hidden bg-gray-50">
-                                <img src={project.planUrl} alt="Plan" className="max-w-full h-auto mx-auto" />
+                                <img src={project.planUrl} alt="Plan Legacy" className="max-w-full h-auto mx-auto" />
+                                <p className="text-xs text-center text-gray-500 p-2">Image legacy (URL externe)</p>
                             </div>
                         ) : (
-                            <div className="h-64 flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-gray-400">
+                            <div className="h-64 flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 p-8">
                                 <Upload className="w-12 h-12 mb-2" />
-                                <p>Aucun plan ajouté. Utilisez "Modifier" pour ajouter l'URL du plan.</p>
+                                <p className="mb-4 text-center">Aucun plan associé. Uploadez un fichier image pour le plan.</p>
+                                <fetcher.Form method="post" encType="multipart/form-data" className="flex flex-col items-center gap-2">
+                                    <input type="hidden" name="intent" value="upload-plan" />
+                                    <input
+                                        type="file"
+                                        name="planFile"
+                                        accept="image/*,application/pdf"
+                                        required
+                                        className="block w-full text-sm text-slate-500
+                                            file:mr-4 file:py-2 file:px-4
+                                            file:rounded-full file:border-0
+                                            file:text-sm file:font-semibold
+                                            file:bg-blue-50 file:text-blue-700
+                                            hover:file:bg-blue-100
+                                        "
+                                    />
+                                    <button type="submit" className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
+                                        Uploader le Plan
+                                    </button>
+                                </fetcher.Form>
                             </div>
                         )}
                     </div>

@@ -230,7 +230,10 @@ model LandDevelopment {
   landOwner   String? // Nom du détenteur du titre (si différent de l'agence)
   boundaries  String? // Limites / Bornage description
   legalStatus String? // Libre, En litige, Hypothéqué
-  planUrl     String? // URL/Path to the development plan image
+  planUrl     String? // Legacy URL/Path
+
+  planDocumentId String?
+  planDocument   Document? @relation(fields: [planDocumentId], references: [id])
 
   // Project Scope
   totalArea Float
@@ -242,10 +245,10 @@ model LandDevelopment {
   lotUnitCost       Float @default(0) // Coût de revient par lot
   expectedMargin    Float @default(0) // Marge prévisionnelle
 
-  rejectionReason   String? // Motif de rejet si applicable
-  status    String // pending, planned, in_progress, completed, paused, rejected
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  rejectionReason String? // Motif de rejet si applicable
+  status          String // pending, planned, in_progress, completed, paused, rejected
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relations
   properties    Property[] // Linked built properties (if any)
@@ -255,14 +258,14 @@ model LandDevelopment {
 }
 
 model DevelopmentLot {
-  id        String @id @default(uuid())
+  id          String  @id @default(uuid())
   lotNumber   String // Just the number e.g. "12"
   blockNumber String? // "Ilot 4"
-  area      Float // m²
-  type      String // habitation, commercial, mixe
-  status    String // available, reserved, sold, pre_financed
-  ownerType String @default("ELITE") // ELITE, FAMILY, PARTNER
-  price     Float // Prix de vente public
+  area        Float // m²
+  type        String // habitation, commercial, mixe
+  status      String // available, reserved, sold, pre_financed
+  ownerType   String  @default("ELITE") // ELITE, FAMILY, PARTNER
+  price       Float // Prix de vente public
 
   features String[] // Specificites du lot (angle, voie bitumée...)
 
@@ -495,8 +498,9 @@ model Document {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ownerId String
-  owner   User   @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  owner           User              @relation(fields: [ownerId], references: [id])
+  LandDevelopment LandDevelopment[]
 }
 
 // --- IT ---

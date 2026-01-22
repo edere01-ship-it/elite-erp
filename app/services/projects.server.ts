@@ -74,10 +74,8 @@ export async function getLandDevelopmentById(id: string) {
             phases: {
                 orderBy: { startDate: "asc" }
             },
-            subscriptions: {
-                include: { client: true, lot: true }
-            },
-            properties: true // Built properties linked to this development
+            properties: true,
+            planDocument: true // Fetch linked plan document
         } as any
     });
 }
@@ -231,6 +229,30 @@ export async function createSubscription(
     });
 }
 // --- Construction Projects ---
+
+// --- Plan Upload ---
+
+import { createDocument } from "~/services/documents.server";
+
+export async function uploadProjectPlan(projectId: string, file: File, userId: string) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const sizeMb = file.size / (1024 * 1024);
+    const sizeStr = sizeMb < 1 ? `${(file.size / 1024).toFixed(0)} KB` : `${sizeMb.toFixed(1)} MB`;
+
+    const doc = await createDocument({
+        name: `PLAN - ${file.name}`,
+        type: "plan",
+        size: sizeStr,
+        category: "plans",
+        ownerId: userId,
+        fileBuffer: buffer
+    });
+
+    await updateLandDevelopment(projectId, { planDocumentId: doc.id });
+    return doc;
+}
+
+// --- Plan Upload ---
 
 export async function createConstructionProject(data: Prisma.ConstructionProjectCreateInput) {
     return prisma.constructionProject.create({

@@ -1,6 +1,6 @@
 import { type LoaderFunctionArgs } from "react-router";
 import { useLoaderData, Link } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { prisma } from "~/db.server";
@@ -51,8 +51,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function ConstructionDashboard() {
     const { projects, developments, error } = useLoaderData<typeof loader>();
     const [activeTab, setActiveTab] = useState<'developments' | 'constructions'>('developments');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
+
+    if (!mounted) return null; // Prevent hydration mismatch
 
     return (
         <div className="space-y-6 animate-fade-in p-6">
