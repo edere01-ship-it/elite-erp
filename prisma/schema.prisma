@@ -230,6 +230,7 @@ model LandDevelopment {
   landOwner   String? // Nom du détenteur du titre (si différent de l'agence)
   boundaries  String? // Limites / Bornage description
   legalStatus String? // Libre, En litige, Hypothéqué
+  planUrl     String? // URL/Path to the development plan image
 
   // Project Scope
   totalArea Float
@@ -255,10 +256,12 @@ model LandDevelopment {
 
 model DevelopmentLot {
   id        String @id @default(uuid())
-  lotNumber String // e.g. "Ilot 4, Lot 12"
+  lotNumber   String // Just the number e.g. "12"
+  blockNumber String? // "Ilot 4"
   area      Float // m²
   type      String // habitation, commercial, mixe
   status    String // available, reserved, sold, pre_financed
+  ownerType String @default("ELITE") // ELITE, FAMILY, PARTNER
   price     Float // Prix de vente public
 
   features String[] // Specificites du lot (angle, voie bitumée...)
@@ -350,6 +353,9 @@ model ConstructionProject {
 
   milestones    Milestone[]
   ExpenseReport ExpenseReport[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Milestone {

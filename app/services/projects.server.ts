@@ -16,6 +16,34 @@ export async function updateLandDevelopment(id: string, data: Prisma.LandDevelop
     });
 }
 
+export async function deleteLandDevelopment(id: string) {
+    // Transactional delete to ensure clean up
+    return prisma.$transaction(async (tx) => {
+        // 1. Check for active subscriptions/sales
+        const activeSubs = await tx.subscription.count({
+            where: { developmentId: id, status: { in: ['active', 'completed'] } }
+        });
+
+        const soldLots = await tx.developmentLot.count({
+            where: { developmentId: id, status: { in: ['sold', 'pre_financed', 'reserved'] } }
+        });
+
+        if (activeSubs > 0 || soldLots > 0) {
+            throw new Error("Impossible de supprimer ce projet : il contient des ventes ou souscriptions actives.");
+        }
+
+        // 2. Delete related entities
+        // Delete lots
+        await tx.developmentLot.deleteMany({ where: { developmentId: id } });
+        // Delete phases
+        await tx.projectPhase.deleteMany({ where: { developmentId: id } });
+        // Delete properties if linked? (Constraint setNull usually, but let's be safe)
+
+        // 3. Delete Project
+        return tx.landDevelopment.delete({ where: { id } });
+    });
+}
+
 export async function getLandDevelopments(status?: string) {
     return prisma.landDevelopment.findMany({
         where: status ? { status } : undefined,
@@ -93,7 +121,16 @@ export async function getProjectStats(id: string) {
 
 // --- Lots ---
 
-export async function generateProjectLots(developmentId: string, count: number, prefix: string = "Lot", startNumber: number = 1, basePrice: number = 0, baseArea: number = 0) {
+export async function generateProjectLots(
+    developmentId: string,
+    count: number,
+    prefix: string = "Lot",
+    startNumber: number = 1,
+    basePrice: number = 0,
+    baseArea: number = 0,
+    blockNumber: string | null = null,
+    ownerType: string = "ELITE"
+) {
     // Bulk create lots
     const lotsData = Array.from({ length: count }).map((_, i) => ({
         lotNumber: `${prefix} ${startNumber + i}`,
@@ -101,8 +138,11 @@ export async function generateProjectLots(developmentId: string, count: number, 
         price: basePrice,
         type: "habitation",
         status: "available",
-        developmentId
+        developmentId,
+        blockNumber,
+        ownerType
     }));
+
 
     // type assertion for createMany as DevelopmentLot might not be in generic client type
     return (prisma as any).developmentLot.createMany({
@@ -115,6 +155,22 @@ export async function updateLot(id: string, data: any) {
         where: { id },
         data,
     });
+}
+
+export async function createDevelopmentLot(data: any) {
+    return (prisma as any).developmentLot.create({
+        data
+    });
+}
+
+export async function deleteDevelopmentLot(id: string) {
+    // Check if sold/reserved
+    const lot = await (prisma as any).developmentLot.findUnique({ where: { id } });
+    if (!lot) throw new Error("Lot introuvable");
+    if (['sold', 'reserved', 'pre_financed'].includes(lot.status)) {
+        throw new Error("Impossible de supprimer un lot vendu ou réservé.");
+    }
+    return (prisma as any).developmentLot.delete({ where: { id } });
 }
 
 // --- Phases ---

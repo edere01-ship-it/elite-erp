@@ -4,7 +4,7 @@ import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { prisma } from "~/db.server";
 import { useState } from "react";
-import { CheckCircle2, XCircle, AlertCircle, Map, HardHat, Eye } from "lucide-react";
+import { CheckCircle2, XCircle, AlertCircle, MapPin, HardHat, Eye } from "lucide-react";
 import { cn } from "~/lib/utils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -179,9 +179,6 @@ export default function AgencyProjectValidation() {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">{p.budget.toLocaleString()} FCFA</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                                     <button
-                                        onClick={() => handleAction('validate')}
-                                        // But wait, handleAction needs selectedItem. I should set it or pass params directly.
-                                        // Simpler: 
                                         onClick={() => {
                                             const form = new FormData();
                                             form.set("intent", "validate");
@@ -213,7 +210,7 @@ export default function AgencyProjectValidation() {
             <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Map className="w-4 h-4 text-blue-600" />
+                        <MapPin className="w-4 h-4 text-blue-600" />
                         Lotissements en attente
                     </h3>
                     <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-bold">
