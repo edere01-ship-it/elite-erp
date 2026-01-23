@@ -160,37 +160,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     // Actually, DashboardLayout imports useFetcher, but we can also use useSubmit if we import it.
     // Let's use standard form submission via a hidden form or just fetcher.submit
 
-    useEffect(() => {
-        const timeoutDuration = 28 * 60 * 1000; // 28 mins
-        let timeoutId: NodeJS.Timeout;
+    // Auto-logout Logic is handled globally in root.tsx by InactivityHandler
 
-        const logout = () => {
-            // Use fetcher to submit to logout
-            submit.submit(null, { method: "post", action: "/logout" });
-        };
-
-        const resetTimer = () => {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(logout, timeoutDuration);
-        };
-
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
-        const handleEvent = () => resetTimer();
-
-        // Initial set
-        resetTimer();
-
-        events.forEach(event => {
-            window.addEventListener(event, handleEvent);
-        });
-
-        return () => {
-            if (timeoutId) clearTimeout(timeoutId);
-            events.forEach(event => {
-                window.removeEventListener(event, handleEvent);
-            });
-        };
-    }, []);
 
     // Sync URL with Messenger State
     useEffect(() => {

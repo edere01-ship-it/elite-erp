@@ -11,7 +11,8 @@ import { PERMISSIONS } from "~/utils/permissions";
 import {
     getLandDevelopmentById, getProjectStats, generateProjectLots,
     deleteLandDevelopment, updateLandDevelopment,
-    updateLot, createDevelopmentLot, deleteDevelopmentLot, getClients
+    updateLot, createDevelopmentLot, deleteDevelopmentLot, getClients,
+    bulkUpdateLots
 } from "~/services/projects.server";
 import { createDocument } from "~/services/documents.server";
 import { cn } from "~/lib/utils";
@@ -26,6 +27,12 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 
     const stats = await getProjectStats(id);
     const clients = await getClients();
+
+    // Sort lots numerically
+    if (project && project.lots) {
+        const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        project.lots.sort((a: any, b: any) => collator.compare(a.lotNumber, b.lotNumber));
+    }
 
     return { project, stats, clients };
 }
@@ -47,7 +54,6 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     if (intent === "update-project") {
         const name = formData.get("name") as string;
-        // const planUrl = formData.get("planUrl") as string; // Removed in favor of document
         await updateLandDevelopment(projectId, { name });
         return { success: true };
     }
@@ -127,6 +133,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
         }
     }
 
+    if (intent === "bulk-update-lots") {
+        const lotIds = JSON.parse(formData.get("lotIds") as string);
+        const updateData: any = {};
+
+        if (formData.has("status") && formData.get("status") !== "") updateData.status = formData.get("status");
+        if (formData.has("ownerType") && formData.get("ownerType") !== "") updateData.ownerType = formData.get("ownerType");
+        if (formData.has("price") && formData.get("price") !== "") updateData.price = parseFloat(formData.get("price") as string);
+
+        await bulkUpdateLots(lotIds, updateData);
+        return { success: true };
+    }
+
     return null;
 }
 
@@ -145,8 +163,24 @@ export default function LandDetail() {
     const [isGenerateOpen, setIsGenerateOpen] = useState(false);
     const [selectedLot, setSelectedLot] = useState<any>(null); // For editing/assigning
 
+    // Bulk Actions State
+    const [selectedLotIds, setSelectedLotIds] = useState<string[]>([]);
+    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false);
+
     const fetcher = useFetcher();
     const navigate = useNavigate();
+
+    // Auto-close modals on success
+    useEffect(() => {
+        if (fetcher.state === "idle" && (fetcher.data as any)?.success) {
+            setEditMode(false);
+            setIsAddLotOpen(false);
+            setIsGenerateOpen(false);
+            setSelectedLot(null);
+            setIsBulkEditOpen(false);
+            setSelectedLotIds([]); // Clear selection after bulk update
+        }
+    }, [fetcher.state, fetcher.data]);
 
     // Unique Blocks
     const blocks = Array.from(new Set(project.lots.map((l: any) => l.blockNumber).filter(Boolean)));
@@ -231,12 +265,9 @@ export default function LandDetail() {
                             <label className="block text-sm font-medium text-gray-700">Nom du Projet</label>
                             <input name="name" defaultValue={project.name} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">URL du Plan (Image)</label>
-                            <input name="planUrl" defaultValue={project.planUrl || ""} placeholder="https://..." className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
-                        </div>
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setEditMode(false)} className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium">Annuler</button>
                         <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium">Enregistrer</button>
                     </div>
                 </fetcher.Form>
@@ -373,6 +404,18 @@ export default function LandDetail() {
             {/* Content: Lots Management */}
             {activeTab === "lots" && (
                 <div className="space-y-4">
+                    {/* Bulk Selection Bar */}
+                    {selectedLotIds.length > 0 && (
+                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg flex justify-between items-center animate-fade-in shadow-sm">
+                            <span className="text-blue-800 font-medium text-sm">{selectedLotIds.length} lot(s) sélectionné(s)</span>
+                            <div className="flex gap-2">
+                                <button onClick={() => setSelectedLotIds([])} className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded text-sm hover:bg-gray-50">Annuler</button>
+                                <button onClick={() => setIsBulkEditOpen(true)} className="px-3 py-1.5 bg-blue-600 text-white border border-blue-600 rounded text-sm hover:bg-blue-700 flex items-center gap-2">
+                                    <Edit className="w-3 h-3" /> Modifier en masse
+                                </button>
+                            </div>
+                        </div>
+                    )}
                     {/* Toolbar */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
                         <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -411,27 +454,47 @@ export default function LandDetail() {
                             {filteredLots.map((lot: any) => (
                                 <div
                                     key={lot.id}
-                                    onClick={() => setSelectedLot(lot)}
                                     className={cn(
-                                        "p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md relative group",
-                                        getCardColor(lot.status)
+                                        "p-3 rounded-lg border transition-all hover:shadow-md relative group select-none",
+                                        getCardColor(lot.status),
+                                        selectedLotIds.includes(lot.id) ? "ring-2 ring-blue-500 shadow-md transform scale-[1.02]" : ""
                                     )}
+                                // Click to select/deselect if holding shift/ctrl or if in selection mode? 
+                                // Let's implement simple check logic: Click on card opens details, check box for selection.
                                 >
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="font-bold text-gray-900">{lot.lotNumber}</span>
-                                        {lot.blockNumber && <span className="text-xs font-mono text-gray-500">{lot.blockNumber}</span>}
+                                    <div className="absolute top-2 right-2 z-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedLotIds.includes(lot.id)}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                if (e.target.checked) {
+                                                    setSelectedLotIds([...selectedLotIds, lot.id]);
+                                                } else {
+                                                    setSelectedLotIds(selectedLotIds.filter(id => id !== lot.id));
+                                                }
+                                            }}
+                                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        />
                                     </div>
-                                    <div className="flex items-center justify-between mt-2">
-                                        <span className="text-xs text-gray-500">{lot.area} m²</span>
-                                        <div className={cn("w-2 h-2 rounded-full", lot.ownerType === "FAMILY" ? "bg-purple-500" : "bg-blue-500")} title={lot.ownerType === "FAMILY" ? "Propriété Famille" : "Propriété Elite"} />
-                                    </div>
-                                    {lot.status !== 'available' && (
-                                        <div className="mt-2 pt-2 border-t border-gray-100/50">
-                                            <p className="text-[10px] uppercase font-bold text-gray-600 truncate">
-                                                {lot.client ? `${lot.client.firstName} ${lot.client.lastName}` : lot.status}
-                                            </p>
+
+                                    <div className="cursor-pointer" onClick={() => setSelectedLot(lot)}>
+                                        <div className="flex justify-between items-start mb-2 pr-6"> {/* pr-6 to avoid overlap with checkbox */}
+                                            <span className="font-bold text-gray-900">{lot.lotNumber}</span>
+                                            {lot.blockNumber && <span className="text-xs font-mono text-gray-500">{lot.blockNumber}</span>}
                                         </div>
-                                    )}
+                                        <div className="flex items-center justify-between mt-2">
+                                            <span className="text-xs text-gray-500">{lot.area} m²</span>
+                                            <div className={cn("w-2 h-2 rounded-full", lot.ownerType === "FAMILY" ? "bg-purple-500" : "bg-blue-500")} title={lot.ownerType === "FAMILY" ? "Propriété Famille" : "Propriété Elite"} />
+                                        </div>
+                                        {lot.status !== 'available' && (
+                                            <div className="mt-2 pt-2 border-t border-gray-100/50">
+                                                <p className="text-[10px] uppercase font-bold text-gray-600 truncate">
+                                                    {lot.client ? `${lot.client.firstName} ${lot.client.lastName}` : lot.status}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -578,7 +641,59 @@ export default function LandDetail() {
                     </fetcher.Form>
                 </DivWrapper>
             )}
+
+            {/* Bulk Edit Logic */}
+            <BulkEditModal isOpen={isBulkEditOpen} onClose={() => setIsBulkEditOpen(false)} lotIds={selectedLotIds} fetcher={fetcher} />
         </div>
+    );
+}
+
+
+
+// Bulk Edit Modal
+function BulkEditModal({ isOpen, onClose, lotIds, fetcher }: { isOpen: boolean, onClose: () => void, lotIds: string[], fetcher: any }) {
+    if (!isOpen) return null;
+    return (
+        <DivWrapper title={`Modifier ${lotIds.length} lots`} onClose={onClose}>
+            <fetcher.Form method="post" className="space-y-4">
+                <input type="hidden" name="intent" value="bulk-update-lots" />
+                <input type="hidden" name="lotIds" value={JSON.stringify(lotIds)} />
+
+                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800 mb-4">
+                    Seuls les champs remplis seront modifiés pour les lots sélectionnés.
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Statut</label>
+                        <select name="status" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">-- Ne pas changer --</option>
+                            <option value="available">Disponible</option>
+                            <option value="reserved">Réservé</option>
+                            <option value="sold">Vendu</option>
+                            <option value="pre_financed">Pré-financé</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Propriétaire</label>
+                        <select name="ownerType" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">-- Ne pas changer --</option>
+                            <option value="ELITE">Elite Immobilier</option>
+                            <option value="FAMILY">Famille</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Prix</label>
+                        <input type="number" name="price" placeholder="Laisser vide pour garder le prix actuel" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                    <button type="button" onClick={onClose} className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm font-medium">Annuler</button>
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm font-medium">Appliquer les modifications</button>
+                </div>
+            </fetcher.Form>
+        </DivWrapper>
     );
 }
 

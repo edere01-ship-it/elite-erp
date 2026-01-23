@@ -162,6 +162,14 @@ export async function updateLot(id: string, data: any) {
     });
 }
 
+export async function bulkUpdateLots(lotIds: string[], data: any) {
+    if (!lotIds.length) return { count: 0 };
+    return (prisma as any).developmentLot.updateMany({
+        where: { id: { in: lotIds } },
+        data,
+    });
+}
+
 export async function createDevelopmentLot(data: any) {
     return (prisma as any).developmentLot.create({
         data
@@ -248,7 +256,7 @@ export async function uploadProjectPlan(projectId: string, file: File, userId: s
         fileBuffer: buffer
     });
 
-    await updateLandDevelopment(projectId, { planDocumentId: doc.id });
+    await updateLandDevelopment(projectId, { planDocumentId: doc.id } as any);
     return doc;
 }
 
