@@ -16,8 +16,9 @@ export function useInactivityLogout() {
             lastActivityRef.current = Date.now();
         };
 
-        // Events to listen for (throttled naturally by only updating a ref)
-        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+        // Events to listen for
+        // Removed 'mousemove' and 'scroll' to prevent performance issues and potential crashes
+        const events = ['mousedown', 'keydown', 'touchstart', 'click'];
 
         // Optimisation: Throttle the event listener if needed, but updating a ref is very cheap.
         // To be safe, we can use a small throttle or just let it fly since it's just a variable assignment.
