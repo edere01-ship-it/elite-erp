@@ -16,7 +16,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     });
 
     if (!employee || !employee.agencyId) {
-        throw new Response("User not assigned to an agency", { status: 403 });
+        throw new Response("Utilisateur non assigné à une agence", { status: 403 });
     }
 
     const { invoices, expenses, transactions, payrolls, employees, validationHistory } = await getAgencyData(employee.agencyId);
@@ -44,7 +44,7 @@ export async function action({ request }: ActionFunctionArgs) {
     const type = formData.get("type") as 'invoice' | 'expense' | 'transaction' | 'payroll' | 'employee';
     const reason = formData.get("reason") as string;
 
-    if (!itemId || !type) return { error: "Missing Parameters" };
+    if (!itemId || !type) return { error: "Paramètres manquants" };
 
     if (intent === "validate") {
         await validateByAgency(itemId, type, user.id);
@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
         return { success: true, message: "Rejeté avec succès" };
     }
 
-    return { error: "Unknown intent" };
+    return { error: "Action inconnue" };
 }
 
 export default function AgencyValidations() {

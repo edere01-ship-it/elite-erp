@@ -13,7 +13,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: { agencyId: true }
     });
 
-    if (!employee?.agencyId) throw new Response("Unauthorized", { status: 403 });
+    if (!employee?.agencyId) throw new Response("Non autorisé", { status: 403 });
     const agencyId = employee.agencyId;
 
     // Fetch Clients linked to this Agency (via invoices, contracts, or assigned agent)

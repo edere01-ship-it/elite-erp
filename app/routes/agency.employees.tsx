@@ -17,7 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: { agencyId: true }
     });
 
-    if (!manager?.agencyId) throw new Response("Unauthorized", { status: 403 });
+    if (!manager?.agencyId) throw new Response("Non autorisé", { status: 403 });
 
     const employees = await prisma.employee.findMany({
         where: {

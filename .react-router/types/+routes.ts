@@ -32,6 +32,11 @@ type Pages = {
   "/agency/projects": {
     params: {};
   };
+  "/agency/projects/:id": {
+    params: {
+      "id": string;
+    };
+  };
   "/agency/commercial": {
     params: {};
   };
@@ -55,6 +60,22 @@ type Pages = {
   };
   "/construction": {
     params: {};
+  };
+  "/construction/new-project": {
+    params: {};
+  };
+  "/construction/new-land": {
+    params: {};
+  };
+  "/construction/land/:id": {
+    params: {
+      "id": string;
+    };
+  };
+  "/construction/project/:id": {
+    params: {
+      "id": string;
+    };
   };
   "/finance": {
     params: {};
@@ -91,11 +112,11 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages" | "/api/notifications" | "/api/sse";
+    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/projects/:id" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/construction/new-project" | "/construction/new-land" | "/construction/land/:id" | "/construction/project/:id" | "/finance" | "/legal" | "/documents" | "/it" | "/login" | "/logout" | "/api/tickets" | "/api/messages" | "/api/notifications" | "/api/sse";
   };
   "routes/_protected.tsx": {
     id: "routes/_protected";
-    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/finance" | "/legal" | "/documents" | "/it";
+    page: "/" | "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/projects/:id" | "/agency/commercial" | "/agency/validations" | "/direction" | "/hr" | "/commercial" | "/properties" | "/visits" | "/construction" | "/construction/new-project" | "/construction/new-land" | "/construction/land/:id" | "/construction/project/:id" | "/finance" | "/legal" | "/documents" | "/it";
   };
   "routes/home.tsx": {
     id: "routes/home";
@@ -103,7 +124,7 @@ type RouteFiles = {
   };
   "routes/agency.tsx": {
     id: "routes/agency";
-    page: "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/commercial" | "/agency/validations";
+    page: "/agency" | "/agency/agents" | "/agency/employees" | "/agency/properties" | "/agency/finance" | "/agency/projects" | "/agency/projects/:id" | "/agency/commercial" | "/agency/validations";
   };
   "routes/agency.agents.tsx": {
     id: "routes/agency.agents";
@@ -124,6 +145,10 @@ type RouteFiles = {
   "routes/agency.projects.tsx": {
     id: "routes/agency.projects";
     page: "/agency/projects";
+  };
+  "routes/agency.projects.$id.tsx": {
+    id: "routes/agency.projects.$id";
+    page: "/agency/projects/:id";
   };
   "routes/agency.commercial.tsx": {
     id: "routes/agency.commercial";
@@ -156,6 +181,22 @@ type RouteFiles = {
   "routes/construction.tsx": {
     id: "routes/construction";
     page: "/construction";
+  };
+  "routes/construction.new-project.tsx": {
+    id: "routes/construction.new-project";
+    page: "/construction/new-project";
+  };
+  "routes/construction.new-land.tsx": {
+    id: "routes/construction.new-land";
+    page: "/construction/new-land";
+  };
+  "routes/construction.land.$id.tsx": {
+    id: "routes/construction.land.$id";
+    page: "/construction/land/:id";
+  };
+  "routes/construction.project.$id.tsx": {
+    id: "routes/construction.project.$id";
+    page: "/construction/project/:id";
   };
   "routes/finance.tsx": {
     id: "routes/finance";
@@ -209,6 +250,7 @@ type RouteModules = {
   "routes/agency.properties": typeof import("./app/routes/agency.properties.tsx");
   "routes/agency.finance": typeof import("./app/routes/agency.finance.tsx");
   "routes/agency.projects": typeof import("./app/routes/agency.projects.tsx");
+  "routes/agency.projects.$id": typeof import("./app/routes/agency.projects.$id.tsx");
   "routes/agency.commercial": typeof import("./app/routes/agency.commercial.tsx");
   "routes/agency.validations": typeof import("./app/routes/agency.validations.tsx");
   "routes/direction": typeof import("./app/routes/direction.tsx");
@@ -217,6 +259,10 @@ type RouteModules = {
   "routes/properties": typeof import("./app/routes/properties.tsx");
   "routes/visits": typeof import("./app/routes/visits.tsx");
   "routes/construction": typeof import("./app/routes/construction.tsx");
+  "routes/construction.new-project": typeof import("./app/routes/construction.new-project.tsx");
+  "routes/construction.new-land": typeof import("./app/routes/construction.new-land.tsx");
+  "routes/construction.land.$id": typeof import("./app/routes/construction.land.$id.tsx");
+  "routes/construction.project.$id": typeof import("./app/routes/construction.project.$id.tsx");
   "routes/finance": typeof import("./app/routes/finance.tsx");
   "routes/legal": typeof import("./app/routes/legal.tsx");
   "routes/documents": typeof import("./app/routes/documents.tsx");

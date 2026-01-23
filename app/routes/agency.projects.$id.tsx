@@ -11,10 +11,10 @@ import { cn } from "~/lib/utils";
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.AGENCY_VIEW);
     const { id } = params;
-    if (!id) throw new Response("Project ID Required", { status: 400 });
+    if (!id) throw new Response("ID du Projet Requis", { status: 400 });
 
     const project = await getLandDevelopmentById(id);
-    if (!project) throw new Response("Project Not Found", { status: 404 });
+    if (!project) throw new Response("Projet Introuvable", { status: 404 });
 
     const stats = await getProjectStats(id);
 

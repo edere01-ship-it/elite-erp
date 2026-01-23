@@ -9,14 +9,14 @@ import { cn } from "~/lib/utils";
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.CONSTRUCTION_VIEW);
     const { id } = params;
-    if (!id) throw new Response("Project ID Required", { status: 400 });
+    if (!id) throw new Response("ID du Projet Requis", { status: 400 });
 
     const project = await prisma.constructionProject.findUnique({
         where: { id },
         include: { manager: true }
     });
 
-    if (!project) throw new Response("Construction Project Not Found", { status: 404 });
+    if (!project) throw new Response("Projet de construction introuvable", { status: 404 });
 
     return { project };
 }

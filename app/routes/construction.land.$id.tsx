@@ -1,6 +1,7 @@
 import { type LoaderFunctionArgs, type ActionFunctionArgs, redirect } from "react-router";
 import { Link, useLoaderData, useFetcher, useNavigate } from "react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+// Refresh build
 import {
     Map, LayoutGrid, Calendar, FileText, CheckCircle2, AlertCircle, Plus, Users,
     DollarSign, ArrowLeft, Trash2, Edit, Save, Upload, X, Search, Filter
@@ -20,10 +21,10 @@ import { cn } from "~/lib/utils";
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.CONSTRUCTION_VIEW);
     const { id } = params;
-    if (!id) throw new Response("Project ID Required", { status: 400 });
+    if (!id) throw new Response("ID du Projet Requis", { status: 400 });
 
     const project = await getLandDevelopmentById(id);
-    if (!project) throw new Response("Project Not Found", { status: 404 });
+    if (!project) throw new Response("Projet Introuvable", { status: 404 });
 
     const stats = await getProjectStats(id);
     const clients = await getClients();
@@ -74,7 +75,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
                 fileBuffer: buffer
             });
 
-            await updateLandDevelopment(projectId, { planDocumentId: doc.id });
+            await updateLandDevelopment(projectId, { planDocumentId: doc.id } as any);
             return { success: true };
         }
         return { error: "Fichier invalide" };
@@ -345,19 +346,19 @@ export default function LandDetail() {
                         <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
                             <Map className="w-5 h-5 text-gray-500" /> Plan du Lotissement
                         </h3>
-                        {project.planDocument ? (
+                        {(project as any).planDocument ? (
                             <div className="space-y-4">
                                 <div className="relative border rounded-lg overflow-hidden bg-gray-50">
-                                    <img src={project.planDocument.path} alt="Plan" className="max-w-full h-auto mx-auto" />
+                                    <img src={(project as any).planDocument.path} alt="Plan" className="max-w-full h-auto mx-auto" />
                                 </div>
                                 <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-200">
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <FileText className="w-4 h-4" />
-                                        <span className="font-medium">{project.planDocument.name}</span>
-                                        <span className="text-gray-400">({project.planDocument.size})</span>
+                                        <span className="font-medium">{(project as any).planDocument.name}</span>
+                                        <span className="text-gray-400">({(project as any).planDocument.size})</span>
                                     </div>
                                     <a
-                                        href={project.planDocument.path}
+                                        href={(project as any).planDocument.path}
                                         download
                                         target="_blank"
                                         rel="noopener noreferrer"

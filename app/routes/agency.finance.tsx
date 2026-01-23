@@ -35,7 +35,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         select: { agencyId: true }
     });
 
-    if (!employee?.agencyId) throw new Response("Unauthorized", { status: 403 });
+    if (!employee?.agencyId) throw new Response("Non autorisé", { status: 403 });
     const agencyId = employee.agencyId;
 
     const [invoicesResults, expensesResults, transactionsResults, rejectedInvoicesResults, rejectedExpensesResults] = await Promise.all([
