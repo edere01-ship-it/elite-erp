@@ -7,6 +7,7 @@ import { ClientList } from "~/components/clients/ClientList";
 import { ClientForm } from "~/components/clients/ClientForm";
 import { CommercialStats } from "~/components/commercial/CommercialStats";
 import { cn } from "~/lib/utils";
+import { PremiumBackground } from "~/components/ui/PremiumBackground";
 
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
@@ -185,118 +186,117 @@ export default function Commercial() {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Direction Commerciale</h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Suivi des performances et gestion de la clientèle.
-                    </p>
+        <div className="min-h-screen relative overflow-hidden font-sans text-slate-800 pb-10">
+            <PremiumBackground />
+
+            <div className="space-y-6 relative z-10 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-lg">
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Direction Commerciale</h1>
+                        <p className="mt-1 text-sm font-medium text-slate-600">
+                            Suivi des performances et gestion de la clientèle.
+                        </p>
+                    </div>
+                    <div className="flex gap-3 mt-4 sm:mt-0">
+                        {activeTab === 'clients' && canCreate && (
+                            <button
+                                onClick={() => { setEditingClient(null); setIsCreateModalOpen(true); }}
+                                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-blue-600 transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Plus className="h-4 w-4" />
+                                Nouveau Client
+                            </button>
+                        )}
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    {activeTab === 'clients' && canCreate && (
+
+                <div className="overflow-x-auto pb-2 scrollbar-hide">
+                    <nav className="bg-white/30 backdrop-blur-xl p-1.5 rounded-2xl inline-flex shadow-inner border border-white/40 space-x-1" aria-label="Tabs">
                         <button
-                            onClick={() => { setEditingClient(null); setIsCreateModalOpen(true); }}
-                            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            onClick={() => setActiveTab('dashboard')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                activeTab === 'dashboard'
+                                    ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                    : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
+                            )}
                         >
-                            <Plus className="h-4 w-4" />
-                            Nouveau Client
+                            <LayoutDashboard className={cn("w-4 h-4", activeTab === 'dashboard' ? "text-blue-600" : "text-slate-400")} />
+                            Tableau de Bord
                         </button>
-                    )}
+                        <button
+                            onClick={() => setActiveTab('clients')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                activeTab === 'clients'
+                                    ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                    : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
+                            )}
+                        >
+                            <Users className={cn("w-4 h-4", activeTab === 'clients' ? "text-blue-600" : "text-slate-400")} />
+                            Clients & Prospects
+                        </button>
+                    </nav>
                 </div>
-            </div>
 
-            <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                    <button
-                        onClick={() => setActiveTab('dashboard')}
-                        className={cn(
-                            activeTab === 'dashboard'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium"
-                        )}
-                    >
-                        <LayoutDashboard
-                            className={cn(
-                                activeTab === 'dashboard' ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500",
-                                "-ml-0.5 mr-2 h-5 w-5"
-                            )}
-                        />
-                        Tableau de Bord
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('clients')}
-                        className={cn(
-                            activeTab === 'clients'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium"
-                        )}
-                    >
-                        <Users
-                            className={cn(
-                                activeTab === 'clients' ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500",
-                                "-ml-0.5 mr-2 h-5 w-5"
-                            )}
-                        />
-                        Clients & Prospects
-                    </button>
-                </nav>
-            </div>
+                <div className="mt-6 animate-fade-in">
+                    {activeTab === 'dashboard' ? (
+                        <div className="space-y-8">
+                            <CommercialStats stats={stats} />
 
-            <div className="mt-6">
-                {activeTab === 'dashboard' ? (
-                    <div className="space-y-6">
-                        <CommercialStats stats={stats} />
-
-                        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-                            <h3 className="text-lg font-medium text-gray-900 mb-4">Derniers ajouts (Clients)</h3>
+                            <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-xl p-6 shadow-lg">
+                                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-blue-500" />
+                                    Derniers ajouts (Clients)
+                                </h3>
+                                <ClientList
+                                    clients={recentClients}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-xl p-6 shadow-lg">
                             <ClientList
-                                clients={recentClients}
+                                clients={allClients}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
                             />
                         </div>
-                    </div>
-                ) : (
-                    <ClientList
-                        clients={allClients}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                )}
-            </div>
+                    )}
+                </div>
 
-            {/* Modal */}
-            {isCreateModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-                    <div
-                        className="fixed inset-0 bg-gray-500/75 transition-opacity"
-                        aria-hidden="true"
-                        onClick={() => { setIsCreateModalOpen(false); setEditingClient(null); }}
-                    />
+                {/* Modal */}
+                {isCreateModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                        <div
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                            aria-hidden="true"
+                            onClick={() => { setIsCreateModalOpen(false); setEditingClient(null); }}
+                        />
 
-                    <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl transition-all max-h-[90vh] overflow-y-auto">
-                        <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <div className="sm:flex sm:items-start">
-                                <div className="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                    <h3 className="text-lg font-semibold leading-6 text-gray-900" id="modal-title">
-                                        {editingClient ? "Modifier le client" : "Ajouter un nouveau client"}
-                                    </h3>
-                                    <div className="mt-4">
-                                        <ClientForm
-                                            defaultValues={editingClient}
-                                            isSubmitting={isSubmitting}
-                                            onCancel={() => { setIsCreateModalOpen(false); setEditingClient(null); }}
-                                        />
+                        <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-3xl bg-white/90 backdrop-blur-2xl shadow-2xl ring-1 ring-white/50 transition-all max-h-[90vh] overflow-y-auto">
+                            <div className="px-6 pb-6 pt-6 sm:p-8">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="w-full text-center sm:text-left">
+                                        <h3 className="text-xl font-bold leading-6 text-slate-900 mb-6 pb-4 border-b border-slate-200" id="modal-title">
+                                            {editingClient ? "Modifier le client" : "Ajouter un nouveau client"}
+                                        </h3>
+                                        <div className="mt-4">
+                                            <ClientForm
+                                                defaultValues={editingClient}
+                                                isSubmitting={isSubmitting}
+                                                onCancel={() => { setIsCreateModalOpen(false); setEditingClient(null); }}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 }

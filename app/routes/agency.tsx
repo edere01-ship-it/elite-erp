@@ -49,23 +49,30 @@ export async function loader({ request }: LoaderFunctionArgs) {
     return { user, agency, stats, enhancedStats };
 }
 
+import { PremiumBackground } from "~/components/ui/PremiumBackground";
+import { StatCard } from "~/components/dashboard/StatCard";
+
 export default function AgencyDashboard() {
     const { user, agency, stats, enhancedStats } = useLoaderData<typeof loader>();
     const location = useLocation();
 
     if (!agency || !stats || !enhancedStats) {
-        // ... existing error view ...
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-                <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full text-center">
-                    <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-xl font-bold text-gray-900 mb-2">Compte non configuré</h1>
-                    <p className="text-gray-500 mb-6">
+            <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-4">
+                <PremiumBackground />
+                <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/50 max-w-md w-full text-center relative z-10 animate-fade-in-up">
+                    <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="h-10 w-10 text-red-500" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-slate-900 mb-2">Compte non configuré</h1>
+                    <p className="text-slate-600 mb-8 leading-relaxed">
                         Votre compte utilisateur n'est associé à aucune agence ou fiche employé.
                         <br />
-                        Veuillez contacter l'Administrateur pour vérifier que votre email employé correspond bien à votre email de connexion.
+                        Veuillez contacter l'Administrateur pour vérification.
                     </p>
-                    <Link to="/logout" className="text-blue-600 hover:underline">Se déconnecter</Link>
+                    <Link to="/logout" className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-red-600 hover:bg-red-700 shadow-lg shadow-red-500/30 transition-all">
+                        Se déconnecter
+                    </Link>
                 </div>
             </div>
         );
@@ -81,100 +88,74 @@ export default function AgencyDashboard() {
         { name: 'Validations', href: '/agency/validations', icon: CheckCircle2, count: stats.pendingValidations },
     ];
 
-    const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(amount);
+    const formatCurrency = (amount: number) => new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF", maximumFractionDigits: 0 }).format(amount);
     const maxRevenue = Math.max(...enhancedStats.revenueHistory.map(r => Math.max(r.income, r.expense)), 1000);
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <header className="bg-white shadow">
-                <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Direction Agence</h1>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Agence: <span className="font-medium text-blue-600">{agency.name}</span>
-                        </p>
+        <div className="min-h-screen relative font-sans text-slate-800 pb-10">
+            <PremiumBackground />
+
+            <header className="relative z-10 bg-white/70 backdrop-blur-md shadow-sm border-b border-white/50 sticky top-0">
+                <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div className="flex items-center gap-4">
+                        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 text-white p-2.5 rounded-xl shadow-lg shadow-blue-500/30">
+                            <LayoutDashboard className="h-6 w-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Direction Agence</h1>
+                            <p className="text-sm text-slate-500 font-medium">
+                                Agence: <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">{agency.name}</span>
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 text-sm font-medium">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            En ligne
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">
+            <main className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full">
 
                 {/* KPI Cards */}
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-                    {/* ... Same KPI cards as before ... */}
-                    <div className="overflow-hidden rounded-lg bg-white shadow">
-                        <div className="p-5">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <TrendingUp className="h-6 w-6 text-gray-400" />
-                                </div>
-                                <div className="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt className="truncate text-sm font-medium text-gray-500">Ventes du Mois</dt>
-                                        <dd>
-                                            <div className="text-lg font-medium text-gray-900">{formatCurrency(stats.monthlySales)}</div>
-                                        </dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="overflow-hidden rounded-lg bg-white shadow">
-                        <div className="p-5">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <AlertCircle className="h-6 w-6 text-yellow-400" />
-                                </div>
-                                <div className="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt className="truncate text-sm font-medium text-gray-500">Validations en attente</dt>
-                                        <dd>
-                                            <div className="text-lg font-medium text-gray-900">{stats.pendingValidations}</div>
-                                        </dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="overflow-hidden rounded-lg bg-white shadow">
-                        <div className="p-5">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <Users className="h-6 w-6 text-blue-400" />
-                                </div>
-                                <div className="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt className="truncate text-sm font-medium text-gray-500">Agents Actifs</dt>
-                                        <dd>
-                                            <div className="text-lg font-medium text-gray-900">{stats.agentCount}</div>
-                                        </dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="overflow-hidden rounded-lg bg-white shadow">
-                        <div className="p-5">
-                            <div className="flex items-center">
-                                <div className="flex-shrink-0">
-                                    <Building2 className="h-6 w-6 text-purple-400" />
-                                </div>
-                                <div className="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt className="truncate text-sm font-medium text-gray-500">Biens en Portefeuille</dt>
-                                        <dd>
-                                            <div className="text-lg font-medium text-gray-900">{stats.propertyCount}</div>
-                                        </dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                    <StatCard
+                        title="Ventes du Mois"
+                        value={formatCurrency(stats.monthlySales)}
+                        icon={TrendingUp}
+                        className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                        iconClassName="bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/30"
+                    />
+                    <StatCard
+                        title="Validations"
+                        value={stats.pendingValidations.toString()}
+                        subtitle="En attente"
+                        icon={AlertCircle}
+                        className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                        iconClassName="bg-gradient-to-br from-amber-400 to-orange-400 text-white shadow-lg shadow-orange-500/30"
+                    />
+                    <StatCard
+                        title="Agents Actifs"
+                        value={stats.agentCount.toString()}
+                        icon={Users}
+                        className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                        iconClassName="bg-gradient-to-br from-blue-400 to-cyan-400 text-white shadow-lg shadow-blue-500/30"
+                    />
+                    <StatCard
+                        title="Biens"
+                        value={stats.propertyCount.toString()}
+                        subtitle="En portefeuille"
+                        icon={Building2}
+                        className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                        iconClassName="bg-gradient-to-br from-emerald-400 to-teal-400 text-white shadow-lg shadow-emerald-500/30"
+                    />
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="mb-8 border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <div className="mb-8">
+                    <nav className="flex space-x-2 overflow-x-auto pb-2 scrollbar-hide" aria-label="Tabs">
                         {navigation.map((item) => {
                             const isActive = item.end
                                 ? location.pathname === item.href
@@ -185,15 +166,15 @@ export default function AgencyDashboard() {
                                     to={item.href}
                                     className={cn(
                                         isActive
-                                            ? "border-blue-500 text-blue-600"
-                                            : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                                        "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
+                                            ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
+                                            : "bg-white/60 text-slate-600 hover:bg-white/80 hover:text-blue-600 border border-white/50",
+                                        "group inline-flex items-center px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200"
                                     )}
                                 >
-                                    <item.icon className={cn(isActive ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500", "-ml-0.5 mr-2 h-5 w-5")} />
+                                    <item.icon className={cn(isActive ? "text-white" : "text-slate-400 group-hover:text-blue-500", "mr-2 h-4 w-4")} />
                                     <span>{item.name}</span>
                                     {item.count ? (
-                                        <span className={cn("ml-3 hidden rounded-full py-0.5 px-2.5 text-xs font-medium md:inline-block", isActive ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-900")}>
+                                        <span className={cn("ml-2 rounded-full py-0.5 px-2 text-xs font-bold", isActive ? "bg-white/20 text-white" : "bg-blue-100 text-blue-600")}>
                                             {item.count}
                                         </span>
                                     ) : null}
@@ -209,59 +190,60 @@ export default function AgencyDashboard() {
 
                         {/* LEFT COLUMN: Revenue Chart */}
                         <div className="lg:col-span-2 space-y-8">
-                            <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
-                                <h3 className="text-lg font-medium text-gray-900 mb-6">Performance Financière (6 mois)</h3>
-                                <div className="h-64 flex items-end space-x-6 justify-between px-4">
+                            <div className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-lg border border-white/50 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-8 relative z-10">Performance Financière (6 mois)</h3>
+                                <div className="h-64 flex items-end space-x-6 justify-between px-4 relative z-10">
                                     {enhancedStats.revenueHistory.map((data, idx) => (
-                                        <div key={idx} className="flex flex-col items-center flex-1 space-y-2 group">
-                                            <div className="w-full flex space-x-1 items-end justify-center h-full">
+                                        <div key={idx} className="flex flex-col items-center flex-1 space-y-3 group cursor-default">
+                                            <div className="w-full flex space-x-2 items-end justify-center h-full">
                                                 {/* Income Bar */}
                                                 <div
-                                                    className="w-4 sm:w-8 bg-blue-500 rounded-t-sm transition-all duration-500 hover:bg-blue-600 relative"
-                                                    style={{ height: `${(data.income / maxRevenue) * 100}%` }}
+                                                    className="w-3 sm:w-6 bg-blue-500 rounded-t-lg transition-all duration-500 group-hover:bg-blue-600 relative group-hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                                                    style={{ height: `${Math.max((data.income / maxRevenue) * 100, 4)}%` }}
                                                     title={`Revenus: ${formatCurrency(data.income)}`}
                                                 ></div>
                                                 {/* Expense Bar */}
                                                 <div
-                                                    className="w-4 sm:w-8 bg-red-400 rounded-t-sm transition-all duration-500 hover:bg-red-500 relative"
-                                                    style={{ height: `${(data.expense / maxRevenue) * 100}%` }}
+                                                    className="w-3 sm:w-6 bg-red-400 rounded-t-lg transition-all duration-500 group-hover:bg-red-500 relative group-hover:shadow-[0_0_15px_rgba(248,113,113,0.5)]"
+                                                    style={{ height: `${Math.max((data.expense / maxRevenue) * 100, 4)}%` }}
                                                     title={`Dépenses: ${formatCurrency(data.expense)}`}
                                                 ></div>
                                             </div>
-                                            <span className="text-xs text-gray-500 font-medium">{data.month}</span>
+                                            <span className="text-xs text-slate-500 font-bold uppercase">{data.month}</span>
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-4 flex justify-center space-x-6">
-                                    <div className="flex items-center"><span className="w-3 h-3 bg-blue-500 rounded-sm mr-2"></span><span className="text-sm text-gray-600">Revenus</span></div>
-                                    <div className="flex items-center"><span className="w-3 h-3 bg-red-400 rounded-sm mr-2"></span><span className="text-sm text-gray-600">Dépenses</span></div>
+                                <div className="mt-8 flex justify-center gap-8">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg border border-blue-100"><span className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></span><span className="text-sm font-medium text-slate-600">Revenus</span></div>
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-red-50 rounded-lg border border-red-100"><span className="w-3 h-3 bg-red-400 rounded-full shadow-sm"></span><span className="text-sm font-medium text-slate-600">Dépenses</span></div>
                                 </div>
                             </div>
 
                             {/* Recent Activities */}
-                            <div className="bg-white shadow rounded-lg border border-gray-200">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <h3 className="text-lg font-medium text-gray-900">Activités Récentes</h3>
+                            <div className="bg-white/70 backdrop-blur-xl shadow-lg rounded-3xl border border-white/50 overflow-hidden">
+                                <div className="px-8 py-6 border-b border-slate-100">
+                                    <h3 className="text-xl font-bold text-slate-800">Activités Récentes</h3>
                                 </div>
-                                <ul className="divide-y divide-gray-200">
+                                <ul className="divide-y divide-slate-100/50">
                                     {enhancedStats.activities.map((act) => (
-                                        <li key={`${act.type}-${act.id}`} className="px-6 py-4 hover:bg-gray-50">
-                                            <div className="flex items-center space-x-4">
-                                                <div className={`p-2 rounded-full flex-shrink-0 ${act.type === 'transaction' ? 'bg-green-100 text-green-600' :
+                                        <li key={`${act.type}-${act.id}`} className="px-8 py-5 hover:bg-white/40 transition-colors">
+                                            <div className="flex items-center gap-5">
+                                                <div className={`p-3 rounded-2xl shadow-sm ${act.type === 'transaction' ? 'bg-emerald-100 text-emerald-600' :
                                                     act.type === 'property' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'
                                                     }`}>
                                                     {act.type === 'transaction' ? <DollarSign className="w-5 h-5" /> :
                                                         act.type === 'property' ? <Building2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 truncate">{act.title}</p>
-                                                    <p className="text-xs text-gray-500">{new Date(act.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
+                                                    <p className="text-sm font-bold text-slate-800 truncate mb-0.5">{act.title}</p>
+                                                    <p className="text-xs text-slate-500 font-medium">{new Date(act.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</p>
                                                 </div>
                                             </div>
                                         </li>
                                     ))}
                                     {enhancedStats.activities.length === 0 && (
-                                        <li className="px-6 py-8 text-center text-gray-500">Aucune activité récente.</li>
+                                        <li className="px-8 py-12 text-center text-slate-500 italic">Aucune activité récente.</li>
                                     )}
                                 </ul>
                             </div>
@@ -271,51 +253,62 @@ export default function AgencyDashboard() {
                         <div className="space-y-8">
 
                             {/* Control & Validation */}
-                            <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-lg shadow-lg p-6 text-white">
-                                <h3 className="text-lg font-bold mb-4 flex items-center"><CheckCircle2 className="mr-2 h-5 w-5" /> Contrôle & Validation</h3>
-                                <div className="space-y-3">
-                                    <Link to="/agency/validations" className="block w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium py-2 px-4 rounded transition text-center flex justify-between items-center">
+                            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 rounded-3xl shadow-xl shadow-indigo-500/20 p-8 text-white relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+
+                                <h3 className="text-xl font-bold mb-6 flex items-center relative z-10">
+                                    <div className="bg-white/20 p-2 rounded-lg mr-3 shadow-inner"><CheckCircle2 className="h-5 w-5" /></div>
+                                    Contrôle & Validation
+                                </h3>
+
+                                <div className="space-y-4 relative z-10">
+                                    <Link to="/agency/validations" className="block w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold py-3 px-4 rounded-xl transition-all transform hover:-translate-y-0.5 flex justify-between items-center backdrop-blur-sm">
                                         <span>Factures & Dépenses</span>
-                                        {stats.pendingValidations > 0 && <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{stats.pendingValidations}</span>}
+                                        {stats.pendingValidations > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/40 animate-pulse">{stats.pendingValidations}</span>}
                                     </Link>
-                                    <Link to="/agency/validations" className="block w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium py-2 px-4 rounded transition text-center text-sm">
+                                    <Link to="/agency/validations" className="block w-full bg-white/5 hover:bg-white/10 border border-white/10 text-indigo-100 hover:text-white font-medium py-3 px-4 rounded-xl transition text-center text-sm">
                                         Voir tout le registre
                                     </Link>
                                 </div>
-                                <div className="mt-4 text-xs text-blue-200 border-t border-white/10 pt-2">
-                                    En tant que Directeur, vous ne pouvez pas créer d'entrées, seulement les valider.
+                                <div className="mt-6 text-xs text-indigo-200/80 border-t border-white/10 pt-4 font-medium">
+                                    <AlertCircle className="w-3 h-3 inline mr-1" />
+                                    Mode Directeur : Validation uniquement.
                                 </div>
                             </div>
 
                             {/* Top Agents */}
-                            <div className="bg-white shadow rounded-lg border border-gray-200">
-                                <div className="px-6 py-4 border-b border-gray-200">
-                                    <h3 className="text-lg font-medium text-gray-900">Meilleurs Agents (Ventes)</h3>
+                            <div className="bg-white/70 backdrop-blur-xl shadow-lg rounded-3xl border border-white/50 overflow-hidden">
+                                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-800">Meilleurs Agents</h3>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Ventes</span>
                                 </div>
-                                <ul className="divide-y divide-gray-200">
+                                <ul className="divide-y divide-slate-100/50">
                                     {enhancedStats.topAgents.map((agent, idx) => (
-                                        <li key={idx} className="px-6 py-4 flex items-center justify-between">
-                                            <div className="flex items-center">
-                                                <span className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold mr-3 
-                                                    ${idx === 0 ? 'bg-yellow-100 text-yellow-700' : idx === 1 ? 'bg-gray-100 text-gray-700' : 'bg-orange-50 text-orange-700'}`}>
-                                                    {idx + 1}
+                                        <li key={idx} className="px-8 py-5 hover:bg-white/40 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <span className={`flex items-center justify-center w-8 h-8 rounded-xl text-sm font-bold mr-4 shadow-sm
+                                                        ${idx === 0 ? 'bg-yellow-100 text-yellow-700 ring-4 ring-yellow-50' :
+                                                            idx === 1 ? 'bg-slate-100 text-slate-700' : 'bg-orange-50 text-orange-700'}`}>
+                                                        {idx + 1}
+                                                    </span>
+                                                    <span className="text-sm font-bold text-slate-800">{agent.name}</span>
+                                                </div>
+                                                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-100 shadow-sm">
+                                                    {agent.sales} ventes
                                                 </span>
-                                                <span className="text-sm font-medium text-gray-900">{agent.name}</span>
                                             </div>
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                {agent.sales} ventes
-                                            </span>
                                         </li>
                                     ))}
                                     {enhancedStats.topAgents.length === 0 && (
-                                        <li className="px-6 py-8 text-center text-gray-500">Aucune donnée de vente.</li>
+                                        <li className="px-8 py-10 text-center text-slate-400 italic">Aucune donnée de vente.</li>
                                     )}
                                 </ul>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white shadow rounded-lg p-6 min-h-[400px]">
+                    <div className="bg-white/80 backdrop-blur-xl shadow-xl rounded-2xl p-6 min-h-[400px] border border-white/60 animate-fade-in-up">
                         <Outlet />
                     </div>
                 )}

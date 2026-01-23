@@ -1,5 +1,6 @@
-import { Users, CreditCard, Building, Activity, TrendingUp } from "lucide-react";
+import { Users, CreditCard, Building, Activity, TrendingUp, AlertCircle } from "lucide-react";
 import { formatCurrency } from "~/lib/utils";
+import { StatCard } from "~/components/dashboard/StatCard";
 
 interface HRDashboardProps {
     stats: {
@@ -14,127 +15,74 @@ interface HRDashboardProps {
 
 export function HRDashboard({ stats, recentActivity }: HRDashboardProps) {
     return (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {/* Total Employees */}
-                <div className="overflow-hidden rounded-lg bg-white shadow">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Users className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="truncate text-sm font-medium text-gray-500">Total Employés</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{stats.totalEmployees}</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 px-5 py-3">
-                        <div className="text-sm">
-                            <span className="font-medium text-green-700">{stats.activeEmployees} actifs</span>
-                        </div>
-                    </div>
-                </div>
+        <div className="space-y-8 animate-fade-in relative z-10">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                    title="Total Employés"
+                    value={stats.totalEmployees.toString()}
+                    subtitle={`${stats.activeEmployees} actifs`}
+                    icon={Users}
+                    className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                    iconClassName="bg-gradient-to-br from-blue-400 to-cyan-400 text-white shadow-lg shadow-blue-500/30"
+                />
 
-                {/* Masse Salariale */}
-                <div className="overflow-hidden rounded-lg bg-white shadow">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <CreditCard className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="truncate text-sm font-medium text-gray-500">Masse Salariale (Mensuelle)</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">{formatCurrency(stats.totalPayroll)}</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 px-5 py-3">
-                        <div className="text-sm">
-                            <span className="text-gray-500">Moyenne: {formatCurrency(stats.avgSalary)}</span>
-                        </div>
-                    </div>
-                </div>
+                <StatCard
+                    title="Masse Salariale"
+                    value={formatCurrency(stats.totalPayroll)}
+                    subtitle={`Moyenne: ${formatCurrency(stats.avgSalary)}`}
+                    icon={CreditCard}
+                    className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                    iconClassName="bg-gradient-to-br from-emerald-400 to-teal-400 text-white shadow-lg shadow-emerald-500/30"
+                />
 
                 {/* Assignments/Agencies - Placeholder for now could be agencies count */}
-                <div className="overflow-hidden rounded-lg bg-white shadow">
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Building className="h-6 w-6 text-gray-400" aria-hidden="true" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className="truncate text-sm font-medium text-gray-500">Agences / Chantier</dt>
-                                    <dd>
-                                        <div className="text-lg font-medium text-gray-900">--</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="bg-gray-50 px-5 py-3">
-                        <div className="text-sm">
-                            <a href="#" className="font-medium text-blue-700 hover:text-blue-600">Voir détails</a>
-                        </div>
-                    </div>
-                </div>
+                <StatCard
+                    title="Agences / Chantier"
+                    value="--"
+                    subtitle="Voir détails"
+                    icon={Building}
+                    className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                    iconClassName="bg-gradient-to-br from-purple-400 to-indigo-400 text-white shadow-lg shadow-purple-500/30"
+                />
 
-                {/* Validations */}
-                <div className={`overflow-hidden rounded-lg shadow ${stats.pendingValidations > 0 ? "bg-red-50 border-2 border-red-500" : "bg-white"}`}>
-                    <div className="p-5">
-                        <div className="flex items-center">
-                            <div className="flex-shrink-0">
-                                <Activity className={`h-6 w-6 ${stats.pendingValidations > 0 ? "text-red-600" : "text-gray-400"}`} aria-hidden="true" />
-                            </div>
-                            <div className="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt className={`truncate text-sm font-medium ${stats.pendingValidations > 0 ? "text-red-700" : "text-gray-500"}`}>Validations En Attente</dt>
-                                    <dd>
-                                        <div className={`text-lg font-medium ${stats.pendingValidations > 0 ? "text-red-900" : "text-gray-900"}`}>{stats.pendingValidations}</div>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                    <div className={`${stats.pendingValidations > 0 ? "bg-red-100" : "bg-gray-50"} px-5 py-3`}>
-                        <div className="text-sm">
-                            <span className={`${stats.pendingValidations > 0 ? "text-red-800 font-bold" : "text-gray-500"}`}>
-                                {stats.pendingValidations > 0 ? "Action requise ! (Validation DG/Agence)" : "Transmission requise"}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <StatCard
+                    title="Validations"
+                    value={stats.pendingValidations.toString()}
+                    subtitle={stats.pendingValidations > 0 ? "Action requise !" : "Aucune attente"}
+                    icon={Activity}
+                    className={`backdrop-blur-xl border shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl ${stats.pendingValidations > 0 ? "bg-red-50/80 border-red-200" : "bg-white/70 border-white/50"}`}
+                    iconClassName={`shadow-lg text-white ${stats.pendingValidations > 0 ? "bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/30 animate-pulse" : "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-500/30"}`}
+                />
             </div>
 
             {/* Recent Activity / Quick Actions Section */}
-            <div className="overflow-hidden rounded-lg bg-white shadow">
-                <div className="px-4 py-5 sm:px-6">
-                    <h3 className="text-base font-semibold leading-6 text-gray-900">Activité Récente</h3>
+            <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 overflow-hidden">
+                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-xl font-bold text-slate-800">Activité Récente</h3>
+                    <TrendingUp className="w-5 h-5 text-blue-500" />
                 </div>
-                <div className="border-t border-gray-200">
-                    <ul role="list" className="divide-y divide-gray-200">
+                <div className="divide-y divide-slate-100/50">
+                    <ul role="list" className="divide-y divide-slate-100/50">
                         {recentActivity.length > 0 ? (
                             recentActivity.map((activity, idx) => (
-                                <li key={idx} className="px-4 py-4 sm:px-6">
+                                <li key={idx} className="px-8 py-5 hover:bg-white/40 transition-colors">
                                     <div className="flex items-center justify-between">
-                                        <p className="truncate text-sm font-medium text-blue-600">{activity.description}</p>
-                                        <div className="ml-2 flex flex-shrink-0">
-                                            <p className="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">{activity.date}</p>
+                                        <div className="flex items-center space-x-4">
+                                            <div className="p-2 rounded-full bg-blue-50 text-blue-600">
+                                                <Activity className="w-4 h-4" />
+                                            </div>
+                                            <p className="text-sm font-bold text-slate-700 truncate">{activity.description}</p>
+                                        </div>
+                                        <div className="flex-shrink-0">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                                {activity.date}
+                                            </span>
                                         </div>
                                     </div>
                                 </li>
                             ))
                         ) : (
-                            <li className="px-4 py-4 text-sm text-gray-500">Aucune activité récente.</li>
+                            <li className="px-8 py-10 text-center text-slate-500 italic">Aucune activité récente.</li>
                         )}
                     </ul>
                 </div>

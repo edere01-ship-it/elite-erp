@@ -1,6 +1,7 @@
 import type { FinancialSummary } from "~/types/finance";
 import { TrendingUp, TrendingDown, PiggyBank, Wallet, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { StatCard } from "~/components/dashboard/StatCard";
 
 interface FinancialStatsProps {
     summary: FinancialSummary;
@@ -12,72 +13,44 @@ export function FinancialStats({ summary }: FinancialStatsProps) {
     };
 
     return (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Recettes Totales</p>
-                        <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(summary.totalIncome)}</p>
-                    </div>
-                    <div className="rounded-full bg-green-100 p-3 text-green-600">
-                        <TrendingUp className="h-6 w-6" />
-                    </div>
-                </div>
-                <div className="mt-4 flex items-center text-sm text-green-600">
-                    <ArrowUpRight className="mr-1 h-4 w-4" />
-                    <span className="font-medium">+12.5%</span>
-                    <span className="ml-2 text-gray-500">vs mois dernier</span>
-                </div>
-            </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in">
+            <StatCard
+                title="Recettes Totales"
+                value={formatCurrency(summary.totalIncome)}
+                subtitle="Flux entrant"
+                icon={TrendingUp}
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/30"
+                trend={{ value: "+12.5%", label: "vs mois dernier", positive: true }}
+            />
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Dépenses Totales</p>
-                        <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(summary.totalExpenses)}</p>
-                    </div>
-                    <div className="rounded-full bg-red-100 p-3 text-red-600">
-                        <TrendingDown className="h-6 w-6" />
-                    </div>
-                </div>
-                <div className="mt-4 flex items-center text-sm text-red-600">
-                    <ArrowDownRight className="mr-1 h-4 w-4" />
-                    <span className="font-medium">+4.1%</span>
-                    <span className="ml-2 text-gray-500">vs mois dernier</span>
-                </div>
-            </div>
+            <StatCard
+                title="Dépenses Totales"
+                value={formatCurrency(summary.totalExpenses)}
+                subtitle="Flux sortant"
+                icon={TrendingDown}
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-red-400 to-pink-500 text-white shadow-lg shadow-red-500/30"
+                trend={{ value: "+4.1%", label: "vs mois dernier", positive: false }}
+            />
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Résultat Net</p>
-                        <p className="mt-2 text-2xl font-bold text-blue-600">{formatCurrency(summary.netIncome)}</p>
-                    </div>
-                    <div className="rounded-full bg-blue-100 p-3 text-blue-600">
-                        <PiggyBank className="h-6 w-6" />
-                    </div>
-                </div>
-                <div className="mt-4 w-full rounded-full bg-gray-100 h-1.5 overflow-hidden">
-                    <div className="h-full bg-blue-500" style={{ width: '75%' }}></div>
-                </div>
-                <p className="mt-2 text-xs text-gray-500">Marge bénéficiaire nette: 32%</p>
-            </div>
+            <StatCard
+                title="Résultat Net"
+                value={formatCurrency(summary.netIncome)}
+                subtitle="Marge net: 32%"
+                icon={PiggyBank}
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-blue-400 to-indigo-500 text-white shadow-lg shadow-blue-500/30"
+            />
 
-            <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <p className="text-sm font-medium text-gray-500">Trésorerie</p>
-                        <p className="mt-2 text-2xl font-bold text-gray-900">{formatCurrency(summary.cashBalance)}</p>
-                    </div>
-                    <div className="rounded-full bg-purple-100 p-3 text-purple-600">
-                        <Wallet className="h-6 w-6" />
-                    </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between text-sm">
-                    <span className="text-gray-500">En attente:</span>
-                    <span className="font-medium text-orange-600">{formatCurrency(summary.pendingIncome)}</span>
-                </div>
-            </div>
+            <StatCard
+                title="Trésorerie"
+                value={formatCurrency(summary.cashBalance)}
+                subtitle={`En attente: ${formatCurrency(summary.pendingIncome)}`}
+                icon={Wallet}
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-purple-400 to-violet-500 text-white shadow-lg shadow-purple-500/30"
+            />
         </div>
     );
 }

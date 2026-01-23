@@ -11,6 +11,7 @@ import { InvoiceForm } from "~/components/finance/InvoiceForm";
 import { InvoiceManager } from "~/components/finance/InvoiceManager";
 import { ValidationManager } from "~/components/finance/ValidationManager";
 import { cn } from "~/lib/utils";
+import { PremiumBackground } from "~/components/ui/PremiumBackground";
 import { PERMISSIONS } from "~/utils/permissions";
 import { notifyAgencyManagers, notifyDirection } from "~/services/notification.server";
 import { requirePermission, hasPermission } from "~/utils/permissions.server";
@@ -485,14 +486,14 @@ export default function Finance() {
         canCreate
     } = useLoaderData<typeof loader>();
     const navigation = useNavigation();
-    const submit = useSubmit();
+
+    // We need intent to check if specific form is submitting
+    const isSubmitting = navigation.state === "submitting";
+    const intent = navigation.formData?.get("intent");
 
     const [activeTab, setActiveTab] = useState<'dashboard' | 'invoices' | 'validation'>('dashboard');
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-
-    const isSubmitting = navigation.state === "submitting";
-    const intent = navigation.formData?.get("intent");
 
     useEffect(() => {
         if (navigation.state === "loading" && !isSubmitting) {
@@ -504,172 +505,171 @@ export default function Finance() {
     const pendingCount = (pendingPayrolls?.length || 0) + (pendingInvoices?.length || 0) + (pendingExpenses?.length || 0);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Comptabilité & Finances</h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Gestion financière complète : Trésorerie, Facturation, Validation.
-                    </p>
-                </div>
-            </div>
+        <div className="min-h-screen relative overflow-hidden font-sans text-slate-800 pb-10">
+            <PremiumBackground />
 
-            <div className="border-b border-gray-200">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                    <button
-                        onClick={() => setActiveTab('dashboard')}
-                        className={cn(
-                            activeTab === 'dashboard'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium"
-                        )}
-                    >
-                        <Banknote className={cn(
-                            activeTab === 'dashboard' ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500",
-                            "-ml-0.5 mr-2 h-5 w-5"
-                        )} />
-                        Journal & Trésorerie
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('invoices')}
-                        className={cn(
-                            activeTab === 'invoices'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium"
-                        )}
-                    >
-                        <FileText className={cn(
-                            activeTab === 'invoices' ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500",
-                            "-ml-0.5 mr-2 h-5 w-5"
-                        )} />
-                        Facturation
-                    </button>
-                    {canValidate && (
+            <div className="space-y-6 relative z-10 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-lg">
+                    <div>
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Comptabilité & Finances</h1>
+                        <p className="mt-1 text-sm font-medium text-slate-600">
+                            Gestion financière complète : Trésorerie, Facturation, Validation.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto pb-2 scrollbar-hide">
+                    <nav className="bg-white/30 backdrop-blur-xl p-1.5 rounded-2xl inline-flex shadow-inner border border-white/40 space-x-1" aria-label="Tabs">
                         <button
-                            onClick={() => setActiveTab('validation')}
+                            onClick={() => setActiveTab('dashboard')}
                             className={cn(
-                                activeTab === 'validation'
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                                "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium"
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                activeTab === 'dashboard'
+                                    ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                    : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
                             )}
                         >
-                            <CheckCircle className={cn(
-                                activeTab === 'validation' ? "text-blue-500" : "text-gray-400 group-hover:text-gray-500",
-                                "-ml-0.5 mr-2 h-5 w-5"
-                            )} />
-                            Validations ({(pendingPayrolls?.length || 0)})
-                            {pendingCount > 0 && (
-                                <span className="ml-2 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                                    {pendingCount}
-                                </span>
-                            )}
+                            <Banknote className={cn("w-4 h-4", activeTab === 'dashboard' ? "text-blue-600" : "text-slate-400")} />
+                            Journal & Trésorerie
                         </button>
-                    )}
-                </nav>
-            </div>
+                        <button
+                            onClick={() => setActiveTab('invoices')}
+                            className={cn(
+                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                activeTab === 'invoices'
+                                    ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                    : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
+                            )}
+                        >
+                            <FileText className={cn("w-4 h-4", activeTab === 'invoices' ? "text-blue-600" : "text-slate-400")} />
+                            Facturation
+                        </button>
+                        {canValidate && (
+                            <button
+                                onClick={() => setActiveTab('validation')}
+                                className={cn(
+                                    "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                    activeTab === 'validation'
+                                        ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                        : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
+                                )}
+                            >
+                                <CheckCircle className={cn("w-4 h-4", activeTab === 'validation' ? "text-blue-600" : "text-slate-400")} />
+                                Validations
+                                {pendingCount > 0 && (
+                                    <span className="ml-2 rounded-full bg-red-500 text-white px-2 py-0.5 text-xs font-bold shadow-sm shadow-red-500/20">
+                                        {pendingCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+                    </nav>
+                </div>
 
-            <div className="mt-6">
-                {activeTab === 'dashboard' && (
-                    <div className="space-y-8">
-                        <div className="mt-4 sm:mt-0">
-                            {canCreate && (
+                <div className="mt-6 animate-fade-in">
+                    {activeTab === 'dashboard' && (
+                        <div className="space-y-8">
+                            <div className="flex justify-end">
+                                {canCreate && (
+                                    <button
+                                        onClick={() => setIsTransactionModalOpen(true)}
+                                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/20 hover:from-blue-700 hover:to-blue-600 transition-all hover:scale-105 active:scale-95"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        Nouvelle Opération
+                                    </button>
+                                )}
+                            </div>
+
+                            <FinancialStats summary={summary} />
+
+                            <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 overflow-hidden">
+                                <div className="px-6 py-5 border-b border-white/30 bg-white/40">
+                                    <h3 className="text-lg font-bold text-slate-800">Historique des Transactions</h3>
+                                </div>
+                                <div className="p-6">
+                                    <TransactionList transactions={transactions} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'invoices' && (
+                        <div className="space-y-8">
+                            <div className="flex justify-end">
                                 <button
-                                    onClick={() => setIsTransactionModalOpen(true)}
-                                    className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+                                    onClick={() => setIsInvoiceModalOpen(true)}
+                                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/20 hover:from-indigo-700 hover:to-indigo-600 transition-all hover:scale-105 active:scale-95"
                                 >
                                     <Plus className="h-4 w-4" />
-                                    Nouvelle Opération
+                                    Nouvelle Facture / Devis
                                 </button>
-                            )}
+                            </div>
+                            <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                                <InvoiceManager invoices={invoices} />
+                            </div>
                         </div>
+                    )}
 
-                        <FinancialStats summary={summary} />
+                    {activeTab === 'validation' && canValidate && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                            <ValidationManager
+                                pendingPayrolls={pendingPayrolls}
+                                pendingInvoices={pendingInvoices}
+                                pendingExpenses={pendingExpenses}
+                                validationHistory={validationHistory}
+                            />
+                        </div>
+                    )}
+                </div>
 
-                        <div className="bg-white rounded-lg shadow">
-                            <div className="px-4 py-5 sm:p-6">
-                                <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Historique des Transactions</h3>
-                                <TransactionList transactions={transactions} />
+                {/* Transaction Modal */}
+                {isTransactionModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                        <div
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                            aria-hidden="true"
+                            onClick={() => setIsTransactionModalOpen(false)}
+                        />
+
+                        <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-3xl bg-white/90 backdrop-blur-2xl shadow-2xl ring-1 ring-white/50 transition-all">
+                            <div className="px-6 pb-6 pt-6 sm:p-8">
+                                <h3 className="text-xl font-bold leading-6 text-slate-900 mb-6 pb-4 border-b border-slate-200">
+                                    Enregistrer une opération
+                                </h3>
+                                <TransactionForm
+                                    isSubmitting={isSubmitting && intent === "create-transaction"}
+                                    onCancel={() => setIsTransactionModalOpen(false)}
+                                />
                             </div>
                         </div>
                     </div>
                 )}
 
-                {activeTab === 'invoices' && (
-                    <div className="space-y-8">
-                        <div className="flex justify-end">
-                            <button
-                                onClick={() => setIsInvoiceModalOpen(true)}
-                                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            >
-                                <Plus className="h-4 w-4" />
-                                Nouvelle Facture / Devis
-                            </button>
+                {/* Invoice Modal */}
+                {isInvoiceModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                        <div
+                            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                            aria-hidden="true"
+                            onClick={() => setIsInvoiceModalOpen(false)}
+                        />
+
+                        <div className="relative z-10 w-full max-w-2xl transform overflow-hidden rounded-3xl bg-white/90 backdrop-blur-2xl shadow-2xl ring-1 ring-white/50 transition-all max-h-[90vh] overflow-y-auto">
+                            <div className="px-6 pb-6 pt-6 sm:p-8">
+                                <h3 className="text-xl font-bold leading-6 text-slate-900 mb-6 pb-4 border-b border-slate-200">
+                                    Créer un document financier
+                                </h3>
+                                <InvoiceForm
+                                    clients={clients}
+                                    isSubmitting={isSubmitting && intent === "create-invoice"}
+                                    onCancel={() => setIsInvoiceModalOpen(false)}
+                                />
+                            </div>
                         </div>
-                        <InvoiceManager invoices={invoices} />
                     </div>
                 )}
-
-                {activeTab === 'validation' && canValidate && (
-                    <ValidationManager
-                        pendingPayrolls={pendingPayrolls}
-                        pendingInvoices={pendingInvoices}
-                        pendingExpenses={pendingExpenses}
-                        validationHistory={validationHistory}
-                    />
-                )}
-
-
             </div>
-
-            {/* Transaction Modal */}
-            {isTransactionModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-                    <div
-                        className="fixed inset-0 bg-gray-500/75 transition-opacity"
-                        aria-hidden="true"
-                        onClick={() => setIsTransactionModalOpen(false)}
-                    />
-
-                    <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-lg bg-white shadow-xl transition-all">
-                        <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                                Enregistrer une opération
-                            </h3>
-                            <TransactionForm
-                                isSubmitting={isSubmitting && intent === "create-transaction"}
-                                onCancel={() => setIsTransactionModalOpen(false)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Invoice Modal */}
-            {isInvoiceModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-                    <div
-                        className="fixed inset-0 bg-gray-500/75 transition-opacity"
-                        aria-hidden="true"
-                        onClick={() => setIsInvoiceModalOpen(false)}
-                    />
-
-                    <div className="relative z-10 w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all max-h-[90vh] overflow-y-auto">
-                        <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                                Créer un document financier
-                            </h3>
-                            <InvoiceForm
-                                clients={clients}
-                                isSubmitting={isSubmitting && intent === "create-invoice"}
-                                onCancel={() => setIsInvoiceModalOpen(false)}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

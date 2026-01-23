@@ -9,6 +9,7 @@ import { HRDashboard } from "~/components/hr/HRDashboard";
 import { Assignments } from "~/components/hr/Assignments";
 import { PayslipManager } from "~/components/hr/PayslipManager";
 import { cn, translateStatus } from "~/lib/utils";
+import { PremiumBackground } from "~/components/ui/PremiumBackground";
 // ... (omitted lines to fetch correct context, will rely on finding the specific line relative to imports or mapping)
 
 // Actually, I need to do this in two chunks or be careful with context.
@@ -555,9 +556,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function HR() {
-    const { employees, agencies, payrollRun, currentMonth, canCreate, canEdit, stats, recentActivity, pendingTracking } = useLoaderData<typeof loader>();
+    const { employees, agencies, payrollRun, currentMonth, canCreate, canEdit, stats, recentActivity, pendingTracking, rejectedItems } = useLoaderData<typeof loader>();
     const navigation = useNavigation();
     const submit = useSubmit();
+    const actionData = useActionData<typeof action>();
 
     const [activeTab, setActiveTab] = useState<'dashboard' | 'employees' | 'add_employee' | 'assignments' | 'payroll' | 'transmission' | 'matricules' | 'printing' | 'tracking'>('dashboard');
     const [editingEmployee, setEditingEmployee] = useState<any | null>(null);
@@ -586,22 +588,16 @@ export default function HR() {
     };
 
     // Reset editing state if we switch away from add_employee unless intended
-    // Actually, good UX might be to keep it, but let's clear if "Saved"
     useEffect(() => {
         if (navigation.state === "loading" && !isSubmitting) {
-            // If we just navigated/submitted, and it was successful (we can't easily check success here without actionData, but let's assume if we are switching tabs or reloading)
-            // Simple: If we are on 'add_employee' and submission finished, go back to list?
-            // User requested "Onglet pour créer", so maybe stay there and clear form?
+            // Navigation logic
         }
     }, [navigation.state]);
-
-    const actionData = useActionData<typeof action>();
 
     // Reset editing state and switch tab on success
     useEffect(() => {
         if (actionData?.success) {
             setEditingEmployee(null);
-            // Optional: Show success toast
             if (activeTab === 'add_employee') {
                 setActiveTab('employees');
             }
@@ -610,7 +606,6 @@ export default function HR() {
         }
     }, [actionData]);
 
-    const { rejectedItems } = useLoaderData<typeof loader>();
     const [alertOpen, setAlertOpen] = useState(false);
     const [currentAlertItem, setCurrentAlertItem] = useState<any>(null);
 
@@ -646,458 +641,379 @@ export default function HR() {
                 submit({ intent: "delete_payroll", runId: item.id }, { method: "post" });
             }
             setAlertOpen(false); // Close current
-            // Logic to show next one could implement here if needed via useEffect dependency
         }
     };
 
     return (
-        <div className="space-y-6">
-            {/* Rejection Alert Modal */}
-            {alertOpen && currentAlertItem && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
-                    <div className="fixed inset-0 bg-red-900/40 transition-opacity backdrop-blur-sm" />
-                    <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-red-100 transition-all">
-                        <div className="bg-red-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-red-100">
-                            <div className="sm:flex sm:items-start">
-                                <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                    <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+        <div className="min-h-screen relative overflow-hidden font-sans text-slate-800 pb-10">
+            <PremiumBackground />
+
+            <div className="space-y-6 relative z-10 px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+                {/* Rejection Alert Modal */}
+                {alertOpen && currentAlertItem && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">
+                        <div className="fixed inset-0 bg-red-900/40 transition-opacity backdrop-blur-sm" />
+                        <div className="relative z-10 w-full max-w-lg transform overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-red-100 transition-all scale-100 opacity-100">
+                            <div className="bg-red-50 px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-red-100">
+                                <div className="sm:flex sm:items-start">
+                                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                        <AlertCircle className="h-6 w-6 text-red-600" aria-hidden="true" />
+                                    </div>
+                                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                        <h3 className="text-lg font-bold leading-6 text-red-900" id="modal-title">
+                                            Transmission Rejetée !
+                                        </h3>
+                                        <div className="mt-2">
+                                            <p className="text-sm text-red-700">
+                                                Votre transmission a été rejetée. Veuillez consulter le motif ci-dessous pour corriger ou annuler.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                    <h3 className="text-lg font-bold leading-6 text-red-900" id="modal-title">
-                                        Transmission Rejetée !
-                                    </h3>
-                                    <div className="mt-2">
-                                        <p className="text-sm text-red-700">
-                                            Votre transmission a été rejetée. Veuillez consulter le motif ci-dessous pour corriger ou annuler.
+                            </div>
+                            <div className="px-6 py-4">
+                                <div className="space-y-3">
+                                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                                        <p className="text-sm font-semibold text-gray-700">Elément concerné :</p>
+                                        <p className="text-sm text-gray-900 font-bold mt-1">
+                                            {currentAlertItem.type === 'payroll'
+                                                ? `Paie ${currentAlertItem.month}/${currentAlertItem.year} - ${currentAlertItem.agency?.name || 'Agence'}`
+                                                : `Employé: ${currentAlertItem.firstName} ${currentAlertItem.lastName}`}
+                                        </p>
+                                    </div>
+                                    <div className="bg-red-50 p-3 rounded-xl border border-red-200">
+                                        <p className="text-sm font-semibold text-red-800">Motif du rejet :</p>
+                                        <p className="text-sm text-red-900 italic mt-1 font-medium">
+                                            "{currentAlertItem.rejectionReason || "Aucun motif spécifié"}"
                                         </p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="px-6 py-4">
-                            <div className="space-y-3">
-                                <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
-                                    <p className="text-sm font-semibold text-gray-700">Elément concerné :</p>
-                                    <p className="text-sm text-gray-900">
-                                        {currentAlertItem.type === 'payroll'
-                                            ? `Paie ${currentAlertItem.month}/${currentAlertItem.year} - ${currentAlertItem.agency?.name || 'Agence'}`
-                                            : `Employé: ${currentAlertItem.firstName} ${currentAlertItem.lastName}`}
-                                    </p>
-                                </div>
-                                <div className="bg-red-50 p-3 rounded-md border border-red-200">
-                                    <p className="text-sm font-semibold text-red-800">Motif du rejet :</p>
-                                    <p className="text-sm text-red-900 italic mt-1">
-                                        "{currentAlertItem.rejectionReason || "Aucun motif spécifié"}"
-                                    </p>
-                                </div>
+                            <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleCorrect(currentAlertItem)}
+                                    className="inline-flex w-full justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-blue-500/30 hover:bg-blue-500 sm:w-auto transition-all hover:-translate-y-0.5"
+                                >
+                                    Corriger / Renvoyer
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCancelAlert(currentAlertItem)}
+                                    className="mt-3 inline-flex w-full justify-center rounded-xl bg-white px-4 py-2 text-sm font-bold text-red-600 shadow-sm ring-1 ring-inset ring-red-200 hover:bg-red-50 sm:mt-0 sm:w-auto transition-all"
+                                >
+                                    Annuler (Supprimer)
+                                </button>
                             </div>
                         </div>
-                        <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => handleCorrect(currentAlertItem)}
-                                className="inline-flex w-full justify-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
-                            >
-                                Corriger / Renvoyer
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleCancelAlert(currentAlertItem)}
-                                className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 sm:mt-0 sm:w-auto"
-                            >
-                                Annuler (Supprimer)
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Ressources Humaines</h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        Gestion du personnel, affectations et salaires.
-                    </p>
-                </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="border-b border-gray-200 overflow-x-auto">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                    <button
-                        onClick={() => setActiveTab('dashboard')}
-                        className={cn(
-                            activeTab === 'dashboard'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <LayoutDashboard className={cn("mr-2 h-5 w-5", activeTab === 'dashboard' ? "text-blue-500" : "text-gray-400")} />
-                        Tableau de bord
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('employees')}
-                        className={cn(
-                            activeTab === 'employees'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <Users className={cn("mr-2 h-5 w-5", activeTab === 'employees' ? "text-blue-500" : "text-gray-400")} />
-                        Personnel
-                    </button>
-                    {canCreate && (
-                        <button
-                            onClick={() => { setEditingEmployee(null); setActiveTab('add_employee'); }}
-                            className={cn(
-                                activeTab === 'add_employee'
-                                    ? "border-blue-500 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                                "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                            )}
-                        >
-                            <UserPlus className={cn("mr-2 h-5 w-5", activeTab === 'add_employee' ? "text-blue-500" : "text-gray-400")} />
-                            {editingEmployee ? "Modifier Employé" : "Ajouter Employé"}
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setActiveTab('assignments')}
-                        className={cn(
-                            activeTab === 'assignments'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <Briefcase className={cn("mr-2 h-5 w-5", activeTab === 'assignments' ? "text-blue-500" : "text-gray-400")} />
-                        Affectations
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('matricules')}
-                        className={cn(
-                            activeTab === 'matricules'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <FileText className={cn("mr-2 h-5 w-5", activeTab === 'matricules' ? "text-blue-500" : "text-gray-400")} />
-                        Matricules
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('payroll')}
-                        className={cn(
-                            activeTab === 'payroll'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <FileText className={cn("mr-2 h-5 w-5", activeTab === 'payroll' ? "text-blue-500" : "text-gray-400")} />
-                        Fiches de Paie
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('transmission')}
-                        className={cn(
-                            activeTab === 'transmission'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <Send className={cn("mr-2 h-5 w-5", activeTab === 'transmission' ? "text-blue-500" : "text-gray-400")} />
-                        Transmission
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('printing')}
-                        className={cn(
-                            activeTab === 'printing'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <Printer className={cn("mr-2 h-5 w-5", activeTab === 'printing' ? "text-blue-500" : "text-gray-400")} />
-                        Impressions
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('tracking')}
-                        className={cn(
-                            activeTab === 'tracking'
-                                ? "border-blue-500 text-blue-600"
-                                : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700",
-                            "group inline-flex items-center border-b-2 py-4 px-1 text-sm font-medium whitespace-nowrap"
-                        )}
-                    >
-                        <Activity className={cn("mr-2 h-5 w-5", activeTab === 'tracking' ? "text-blue-500" : "text-gray-400")} />
-                        Suivi Validations
-                        {stats.pendingValidations > 0 && (
-                            <span className="ml-2 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">
-                                {stats.pendingValidations}
-                            </span>
-                        )}
-                    </button>
-                </nav>
-            </div>
-
-            <div className="mt-6">
-                {activeTab === 'dashboard' && (
-                    <HRDashboard stats={stats} recentActivity={recentActivity} />
-                )}
-
-                {activeTab === 'employees' && (
-                    <EmployeeList
-                        employees={employees}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                )}
-
-                {activeTab === 'add_employee' && (
-                    <div className="max-w-4xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 className="text-xl font-semibold mb-6">
-                            {editingEmployee ? "Modifier les informations" : "Créer un nouveau dossier employé"}
-                        </h2>
-                        <EmployeeForm
-                            defaultValues={editingEmployee}
-                            agencies={agencies}
-                            isSubmitting={isSubmitting}
-                            onCancel={() => { setEditingEmployee(null); setActiveTab('employees'); }}
-                        />
                     </div>
                 )}
 
-                {activeTab === 'matricules' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">Matricules Employés</h3>
-                        </div>
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matricule</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employé</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poste</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {employees.map((emp) => (
-                                    <tr key={emp.id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
-                                            {/* @ts-ignore */}
-                                            {emp.matricule || "N/A"}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            <div className="flex items-center gap-3">
-                                                {/* @ts-ignore */}
-                                                {emp.photo ? (
-                                                    // @ts-ignore
-                                                    <img src={emp.photo} alt="" className="h-8 w-8 rounded-full object-cover" />
-                                                ) : (
-                                                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
-                                                        <span className="text-xs font-bold text-gray-500">
-                                                            {emp.firstName[0]}{emp.lastName[0]}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {emp.firstName} {emp.lastName}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {emp.position}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-
-                {activeTab === 'assignments' && (
-                    <Assignments
-                        // @ts-ignore
-                        employees={employees}
-                        agencies={agencies}
-                        onAssign={handleAssign}
-                    />
-                )}
-
-                {activeTab === 'payroll' && (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white/40 backdrop-blur-md rounded-2xl p-6 border border-white/50 shadow-lg">
                     <div>
-                        {/* Reusing SalaryTransmissionSheet for Payroll management/Creation */}
-                        <SalaryTransmissionSheet
-                            // @ts-ignore
-                            payrollRun={payrollRun}
-                            currentMonth={currentMonth}
-                            onMonthChange={handleMonthChange}
-                        />
-                    </div>
-                )}
-
-                {activeTab === 'transmission' && (
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h2 className="text-lg font-medium text-gray-900 mb-4">Transmission des Salaires</h2>
-                        <p className="text-sm text-gray-500 mb-6">
-                            Vérifiez et validez les fiches de paie avant transmission au service financier et à la direction.
+                        <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Ressources Humaines</h1>
+                        <p className="mt-1 text-sm font-medium text-slate-600">
+                            Gestion du personnel, affectations et salaires.
                         </p>
-
-                        {payrollRun ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
-                                    <div>
-                                        <p className="font-medium text-gray-900">Période: {currentMonth}</p>
-                                        <p className="text-sm text-gray-500">Statut: {translateStatus(payrollRun.status)}</p>
-                                        <p className="text-sm text-gray-500">Total: {new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(payrollRun.totalAmount)}</p>
-                                    </div>
-                                    {payrollRun.status === 'draft' && (
-                                        <button
-                                            // Trigger validation via action
-                                            onClick={() => {
-                                                if (confirm("Valider et transmettre ?")) {
-                                                    submit({ intent: "validate_payroll", runId: payrollRun.id }, { method: "post" });
-                                                }
-                                            }}
-                                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-                                        >
-                                            <Send className="h-4 w-4" /> Validé & Transmettre
-                                        </button>
-                                    )}
-                                    {payrollRun.status !== 'draft' && payrollRun.status !== 'agency_rejected' && (
-                                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                            Déjà transmis / Validé ({translateStatus(payrollRun.status)})
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* ALERTE REJET AGENCE */}
-                                {payrollRun.status === 'agency_rejected' && (
-                                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                                        <div className="flex items-start">
-                                            <div className="flex-shrink-0">
-                                                <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
-                                            <div className="ml-3">
-                                                <h3 className="text-sm font-medium text-red-800">URGENT : Paie Rejetée par l'Agence</h3>
-                                                <div className="mt-2 text-sm text-red-700">
-                                                    <p>La transmission a été rejetée. Motif : <strong>{(payrollRun as any).rejectionReason || "Non spécifié"}</strong></p>
-                                                    <p className="mt-2">Veuillez corriger et soumettre à nouveau.</p>
-                                                </div>
-                                                <div className="mt-4">
-                                                    <Form method="post">
-                                                        <input type="hidden" name="intent" value="revert_payroll_to_draft" />
-                                                        <input type="hidden" name="runId" value={payrollRun.id} />
-                                                        <button
-                                                            type="submit"
-                                                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                        >
-                                                            Réinitialiser en Brouillon & Corriger
-                                                        </button>
-                                                    </Form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                <div className="text-sm text-gray-500">
-                                    * La validation verrouille la fiche de paie et notifie le service financier.
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 text-gray-500 border-2 border-dashed rounded-lg">
-                                Aucune fiche de paie en cours pour ce mois. Veuillez d'abord générer la paie dans l'onglet "Fiches de Paie".
-                            </div>
-                        )}
                     </div>
-                )}
+                </div>
 
-                {activeTab === 'printing' && (
-                    <PayslipManager
-                        payrollRun={payrollRun}
-                        // @ts-ignore
-                        employees={employees}
-                    />
-                )}
-
-                {activeTab === 'tracking' && (
-                    <div className="space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-gray-200">
-                                <h3 className="text-lg font-medium text-gray-900">Suivi des Validations</h3>
-                                <p className="text-sm text-gray-500">Suivez l'état d'avancement de vos transmissions.</p>
-                            </div>
-                            <div className="p-6 space-y-8">
-                                {pendingTracking?.runs.length === 0 && pendingTracking?.employees.length === 0 && (
-                                    <div className="text-center py-12 text-gray-500">
-                                        Aucune validation en attente.
-                                    </div>
+                {/* Navigation Tabs */}
+                <div className="overflow-x-auto pb-2 scrollbar-hide">
+                    <nav className="bg-white/30 backdrop-blur-xl p-1.5 rounded-2xl inline-flex shadow-inner border border-white/40 space-x-1" aria-label="Tabs">
+                        {[
+                            { id: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+                            { id: 'employees', label: 'Personnel', icon: Users },
+                            ...(canCreate ? [{ id: 'add_employee', label: editingEmployee ? "Modifier Employé" : "Ajouter Employé", icon: UserPlus }] : []),
+                            { id: 'assignments', label: 'Affectations', icon: Briefcase },
+                            { id: 'matricules', label: 'Matricules', icon: FileText },
+                            { id: 'payroll', label: 'Fiches de Paie', icon: FileText },
+                            { id: 'transmission', label: 'Transmission', icon: Send },
+                            { id: 'printing', label: 'Impressions', icon: Printer },
+                            { id: 'tracking', label: 'Suivi Validations', icon: Activity, badge: stats.pendingValidations }
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300",
+                                    activeTab === tab.id
+                                        ? "bg-white text-blue-700 shadow-md ring-1 ring-black/5 scale-[1.02]"
+                                        : "text-slate-500 hover:bg-white/40 hover:text-slate-900"
                                 )}
+                            >
+                                <tab.icon className={cn("w-4 h-4", activeTab === tab.id ? "text-blue-600" : "text-slate-400")} />
+                                <span>{tab.label}</span>
+                                {tab.badge ? (
+                                    <span className="ml-1.5 bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[10px] shadow-sm shadow-red-500/20">{tab.badge}</span>
+                                ) : null}
+                            </button>
+                        ))}
+                    </nav>
+                </div>
 
-                                {pendingTracking?.runs.map((run: any) => (
-                                    <div key={run.id} className="relative">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-semibold text-gray-900">
-                                                Paie {run.month}/{run.year} - {run.agency?.name || 'Agence'}
-                                            </h4>
-                                            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 capitalize">
-                                                {run.status === 'pending_agency' ? 'Attente Agence' :
-                                                    run.status === 'pending_general' ? 'Attente Direction' :
-                                                        run.status === 'finance_validated' ? 'Attente Paiement' : run.status}
-                                            </span>
-                                        </div>
-                                        {/* Progress Bar */}
-                                        <div className="relative">
-                                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
-                                                <div style={{
-                                                    width:
-                                                        run.status === 'draft' ? '10%' :
-                                                            run.status === 'pending_agency' ? '30%' :
-                                                                run.status === 'pending_general' ? '50%' :
-                                                                    run.status === 'hr_validated' ? '70%' : // Assuming flow
-                                                                        run.status === 'finance_validated' ? '90%' : '100%'
-                                                }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 transition-all duration-500"></div>
-                                            </div>
-                                            <div className="flex justify-between text-xs text-gray-500">
-                                                <span>Création</span>
-                                                <span className={run.status === 'pending_agency' ? "font-bold text-blue-600" : ""}>Agence</span>
-                                                <span className={run.status === 'pending_general' ? "font-bold text-blue-600" : ""}>Direction</span>
-                                                <span className={run.status === 'finance_validated' ? "font-bold text-blue-600" : ""}>Finance</span>
-                                                <span>Terminé</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                <div className="mt-2 animate-fade-in space-y-6">
+                    {activeTab === 'dashboard' && (
+                        <HRDashboard stats={stats} recentActivity={recentActivity} />
+                    )}
 
-                                {pendingTracking?.employees.map((emp: any) => (
-                                    <div key={emp.id} className="relative border-t pt-4">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-semibold text-gray-900">
-                                                Recrutement: {emp.firstName} {emp.lastName}
-                                            </h4>
-                                            <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 capitalize">
-                                                En Attente Validation
+                    {activeTab === 'employees' && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                            <EmployeeList
+                                employees={employees}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'add_employee' && (
+                        <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-white/50">
+                            <h2 className="text-2xl font-bold mb-6 text-slate-800 border-b border-slate-100 pb-4">
+                                {editingEmployee ? "Modifier les informations" : "Créer un nouveau dossier employé"}
+                            </h2>
+                            <EmployeeForm
+                                defaultValues={editingEmployee}
+                                agencies={agencies}
+                                isSubmitting={isSubmitting}
+                                onCancel={() => { setEditingEmployee(null); setActiveTab('employees'); }}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'matricules' && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-white/30 bg-white/40">
+                                <h3 className="text-lg font-bold text-slate-800">Matricules Employés</h3>
+                            </div>
+                            <table className="min-w-full divide-y divide-slate-100">
+                                <thead className="bg-slate-50/50">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Matricule</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Employé</th>
+                                        <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Poste</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white/40 divide-y divide-slate-100">
+                                    {employees.map((emp) => (
+                                        <tr key={emp.id} className="hover:bg-white/60 transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-black text-blue-600 font-mono">
+                                                {/* @ts-ignore */}
+                                                {emp.matricule || "N/A"}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">
+                                                <div className="flex items-center gap-3">
+                                                    {/* @ts-ignore */}
+                                                    {emp.photo ? (
+                                                        // @ts-ignore
+                                                        <img src={emp.photo} alt="" className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm" />
+                                                    ) : (
+                                                        <div className="h-9 w-9 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-2 ring-white shadow-sm">
+                                                            <span className="text-xs font-bold text-slate-500">
+                                                                {emp.firstName[0]}{emp.lastName[0]}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    {emp.firstName} {emp.lastName}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                                {emp.position}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {activeTab === 'assignments' && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                            <Assignments
+                                // @ts-ignore
+                                employees={employees}
+                                agencies={agencies}
+                                onAssign={handleAssign}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'payroll' && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                            <SalaryTransmissionSheet
+                                // @ts-ignore
+                                payrollRun={payrollRun}
+                                currentMonth={currentMonth}
+                                onMonthChange={handleMonthChange}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'transmission' && (
+                        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-lg border border-white/50">
+                            <h2 className="text-xl font-bold text-slate-800 mb-2">Transmission des Salaires</h2>
+                            <p className="text-sm text-slate-500 mb-8 font-medium">
+                                Vérifiez et validez les fiches de paie avant transmission au service financier et à la direction.
+                            </p>
+
+                            {payrollRun ? (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                                        <div>
+                                            <p className="font-bold text-slate-900 text-lg">Période: {currentMonth}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-sm text-slate-500">Statut:</p>
+                                                <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs font-bold uppercase">{translateStatus(payrollRun.status)}</span>
+                                            </div>
+                                            <p className="text-sm text-slate-500 mt-1">Total: <span className="font-bold text-slate-900">{new Intl.NumberFormat("fr-CI", { style: "currency", currency: "XOF" }).format(payrollRun.totalAmount)}</span></p>
+                                        </div>
+                                        {payrollRun.status === 'draft' && (
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Valider et transmettre ?")) {
+                                                        submit({ intent: "validate_payroll", runId: payrollRun.id }, { method: "post" });
+                                                    }
+                                                }}
+                                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 flex items-center gap-2 shadow-lg shadow-blue-500/20 font-bold transition-all hover:-translate-y-0.5"
+                                            >
+                                                <Send className="h-4 w-4" /> Validé & Transmettre
+                                            </button>
+                                        )}
+                                        {payrollRun.status !== 'draft' && payrollRun.status !== 'agency_rejected' && (
+                                            <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-50 text-green-700 border border-green-100 shadow-sm">
+                                                Déjà transmis / Validé ({translateStatus(payrollRun.status)})
                                             </span>
-                                        </div>
-                                        {/* Simple Progress for Employee since flow is simpler */}
-                                        <div className="relative">
-                                            <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200">
-                                                <div style={{ width: '50%' }} className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-amber-500"></div>
-                                            </div>
-                                            <div className="flex justify-between text-xs text-gray-500">
-                                                <span>Saisie RH</span>
-                                                <span className="font-bold text-amber-600">Validation Direction/Agence</span>
-                                                <span>Actif</span>
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
-                                ))}
+
+                                    {/* ALERTE REJET AGENCE */}
+                                    {payrollRun.status === 'agency_rejected' && (
+                                        <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 p-6 rounded-2xl mb-4 shadow-sm">
+                                            <div className="flex items-start">
+                                                <div className="flex-shrink-0">
+                                                    <AlertCircle className="h-5 w-5 text-red-600" />
+                                                </div>
+                                                <div className="ml-3">
+                                                    <h3 className="text-sm font-bold text-red-800">URGENT : Paie Rejetée par l'Agence</h3>
+                                                    <div className="mt-2 text-sm text-red-700 font-medium">
+                                                        <p>La transmission a été rejetée. Motif : <strong>{(payrollRun as any).rejectionReason || "Non spécifié"}</strong></p>
+                                                        <p className="mt-2">Veuillez corriger et soumettre à nouveau.</p>
+                                                    </div>
+                                                    <div className="mt-4">
+                                                        <Form method="post">
+                                                            <input type="hidden" name="intent" value="revert_payroll_to_draft" />
+                                                            <input type="hidden" name="runId" value={payrollRun.id} />
+                                                            <button
+                                                                type="submit"
+                                                                className="inline-flex items-center px-4 py-2 border-2 border-red-200 text-sm font-bold rounded-xl text-red-700 bg-white hover:bg-red-50 transition-colors shadow-sm"
+                                                            >
+                                                                Réinitialiser en Brouillon & Corriger
+                                                            </button>
+                                                        </Form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="text-sm text-slate-400 italic text-center">
+                                        * La validation verrouille la fiche de paie et notifie le service financier.
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-16 text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
+                                    <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                    Aucune fiche de paie en cours pour ce mois. <br />Veuillez d'abord générer la paie dans l'onglet "Fiches de Paie".
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {activeTab === 'printing' && (
+                        <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 p-6">
+                            <PayslipManager
+                                payrollRun={payrollRun}
+                                // @ts-ignore
+                                employees={employees}
+                            />
+                        </div>
+                    )}
+
+                    {activeTab === 'tracking' && (
+                        <div className="space-y-6">
+                            <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-lg border border-white/50 overflow-hidden">
+                                <div className="px-6 py-4 border-b border-white/30 bg-white/40">
+                                    <h3 className="text-lg font-bold text-slate-800">Suivi des Validations</h3>
+                                    <p className="text-sm text-slate-500">Suivez l'état d'avancement de vos transmissions.</p>
+                                </div>
+                                <div className="p-6 space-y-8">
+                                    {pendingTracking?.runs.length === 0 && pendingTracking?.employees.length === 0 && (
+                                        <div className="text-center py-12 text-slate-500 font-medium italic">
+                                            Aucune validation en attente.
+                                        </div>
+                                    )}
+
+                                    {pendingTracking?.runs.map((run: any) => (
+                                        <div key={run.id} className="relative bg-white/40 p-4 rounded-xl border border-white/50 shadow-sm">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="font-bold text-slate-800">
+                                                    Paie {run.month}/{run.year} - {run.agency?.name || 'Agence'}
+                                                </h4>
+                                                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-blue-100/80 text-blue-800 capitalize shadow-sm">
+                                                    {run.status === 'pending_agency' ? 'Attente Agence' :
+                                                        run.status === 'pending_general' ? 'Attente Direction' :
+                                                            run.status === 'finance_validated' ? 'Attente Paiement' : run.status}
+                                                </span>
+                                            </div>
+                                            {/* Progress Bar */}
+                                            <div className="relative">
+                                                <div className="overflow-hidden h-2.5 mb-4 text-xs flex rounded-full bg-slate-200/60 shadow-inner">
+                                                    <div style={{
+                                                        width:
+                                                            run.status === 'draft' ? '10%' :
+                                                                run.status === 'pending_agency' ? '30%' :
+                                                                    run.status === 'pending_general' ? '50%' :
+                                                                        run.status === 'hr_validated' ? '70%' :
+                                                                            run.status === 'finance_validated' ? '90%' : '100%'
+                                                    }} className="shadow-sm flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000 ease-out rounded-full"></div>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] text-slate-500 uppercase font-black tracking-wide">
+                                                    <span>Création</span>
+                                                    <span className={run.status === 'pending_agency' ? "text-blue-600" : ""}>Agence</span>
+                                                    <span className={run.status === 'pending_general' ? "text-blue-600" : ""}>Direction</span>
+                                                    <span className={run.status === 'finance_validated' ? "text-blue-600" : ""}>Finance</span>
+                                                    <span>Terminé</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {pendingTracking?.employees.map((emp: any) => (
+                                        <div key={emp.id} className="relative bg-white/40 p-4 rounded-xl border border-white/50 shadow-sm">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="font-bold text-slate-800">
+                                                    Recrutement: {emp.firstName} {emp.lastName}
+                                                </h4>
+                                                <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100/80 text-amber-800 capitalize shadow-sm">
+                                                    En Attente Validation
+                                                </span>
+                                            </div>
+                                            <div className="relative">
+                                                <div className="overflow-hidden h-2.5 mb-4 text-xs flex rounded-full bg-slate-200/60 shadow-inner">
+                                                    <div style={{ width: '50%' }} className="shadow-sm flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"></div>
+                                                </div>
+                                                <div className="flex justify-between text-[10px] text-slate-500 uppercase font-black tracking-wide">
+                                                    <span>Saisie RH</span>
+                                                    <span className="text-amber-600">Validation Direction/Agence</span>
+                                                    <span>Actif</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

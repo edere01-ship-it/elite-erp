@@ -1,51 +1,6 @@
-import { TrendingUp, TrendingDown, Users, CheckCircle, Clock } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, CheckCircle, Clock, Home } from "lucide-react";
 import { cn } from "~/lib/utils";
-
-interface StatItemProps {
-    label: string;
-    value: string;
-    trend?: string;
-    trendDirection?: 'up' | 'down' | 'neutral';
-    icon: React.ElementType;
-    color: string;
-}
-
-function StatItem({ label, value, trend, trendDirection, icon: Icon, color }: StatItemProps) {
-    return (
-        <div className="overflow-hidden rounded-xl bg-white p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="truncate text-sm font-medium text-gray-500">{label}</p>
-                    <div className="mt-2 flex items-baseline gap-2">
-                        <p className="text-3xl font-semibold text-gray-900">{value}</p>
-                        {trend && (
-                            <span
-                                className={cn(
-                                    "inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium md:mt-2 lg:mt-0",
-                                    trendDirection === "up"
-                                        ? "bg-green-100 text-green-800"
-                                        : trendDirection === "down"
-                                            ? "bg-red-100 text-red-800"
-                                            : "bg-gray-100 text-gray-800"
-                                )}
-                            >
-                                {trendDirection === "up" ? (
-                                    <TrendingUp className="-ml-1 mr-0.5 h-4 w-4 flex-shrink-0" />
-                                ) : trendDirection === "down" ? (
-                                    <TrendingDown className="-ml-1 mr-0.5 h-4 w-4 flex-shrink-0" />
-                                ) : null}
-                                {trend}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <div className={cn("rounded-lg p-3", color)}>
-                    <Icon className="h-6 w-6 text-white" />
-                </div>
-            </div>
-        </div>
-    );
-}
+import { StatCard } from "~/components/dashboard/StatCard";
 
 interface CommercialStatsProps {
     stats: {
@@ -58,38 +13,41 @@ interface CommercialStatsProps {
 
 export function CommercialStats({ stats }: CommercialStatsProps) {
     return (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <StatItem
-                label="Total Biens"
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in">
+            <StatCard
+                title="Total Biens"
                 value={stats.totalProperties.toString()}
-                trend="Inventaire"
-                trendDirection="neutral"
-                icon={TrendingUp}
-                color="bg-blue-500"
+                subtitle="Inventaire global"
+                icon={Home}
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-blue-400 to-cyan-400 text-white shadow-lg shadow-blue-500/30"
             />
-            <StatItem
-                label="Biens Disponibles"
+
+            <StatCard
+                title="Biens Disponibles"
                 value={stats.availableProperties.toString()}
-                trend={`${Math.round((stats.availableProperties / (stats.totalProperties || 1)) * 100)}%`}
-                trendDirection="neutral"
+                subtitle={`${Math.round((stats.availableProperties / (stats.totalProperties || 1)) * 100)}% du parc`}
                 icon={CheckCircle}
-                color="bg-green-500"
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-emerald-400 to-teal-400 text-white shadow-lg shadow-emerald-500/30"
             />
-            <StatItem
-                label="Total Clients"
+
+            <StatCard
+                title="Total Clients"
                 value={stats.totalClients.toString()}
-                trend="Base de données"
-                trendDirection="up"
+                subtitle="Base de données active"
                 icon={Users}
-                color="bg-purple-500"
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-purple-400 to-indigo-400 text-white shadow-lg shadow-purple-500/30"
             />
-            <StatItem
-                label="Prospects Récents"
+
+            <StatCard
+                title="Prospects Récents"
                 value={stats.recentProspectsCount.toString()}
-                trend="Ce mois"
-                trendDirection="neutral"
+                subtitle="Nouveaux ce mois-ci"
                 icon={Clock}
-                color="bg-orange-500"
+                className="bg-white/70 backdrop-blur-xl border-white/50 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-2xl"
+                iconClassName="bg-gradient-to-br from-orange-400 to-rose-400 text-white shadow-lg shadow-orange-500/30"
             />
         </div>
     );
