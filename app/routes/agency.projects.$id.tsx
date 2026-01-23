@@ -6,7 +6,7 @@ import { Map, LayoutGrid, Calendar, FileText, CheckCircle2, AlertCircle, Plus, U
 import { requirePermission } from "~/utils/session.server";
 import { PERMISSIONS } from "~/utils/permissions";
 import { getLandDevelopmentById, getProjectStats, generateProjectLots, createProjectPhase } from "~/services/projects.server";
-import { cn } from "~/lib/utils";
+import { cn, translateStatus } from "~/lib/utils";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.AGENCY_VIEW);
@@ -212,7 +212,7 @@ export default function ProjectDetail() {
                                                 lot.status === 'reserved' ? "bg-orange-50 border-orange-200 text-orange-800" :
                                                     "bg-blue-50 border-blue-200 text-blue-800"
                                     )}
-                                    title={`Lot: ${lot.lotNumber}\nPrix: ${formatCurrency(lot.price)}\nStatut: ${lot.status}`}
+                                    title={`Lot: ${lot.lotNumber}\nPrix: ${formatCurrency(lot.price)}\nStatut: ${translateStatus(lot.status)}`}
                                 >
                                     <span className="text-xs font-bold truncate w-full">{lot.lotNumber}</span>
                                     <span className="text-[10px] opacity-75">{lot.area}m²</span>

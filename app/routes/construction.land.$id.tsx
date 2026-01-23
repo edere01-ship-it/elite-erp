@@ -16,7 +16,7 @@ import {
     bulkUpdateLots
 } from "~/services/projects.server";
 import { createDocument } from "~/services/documents.server";
-import { cn } from "~/lib/utils";
+import { cn, translateStatus } from "~/lib/utils";
 
 export async function loader({ request, params }: LoaderFunctionArgs) {
     await requirePermission(request, PERMISSIONS.CONSTRUCTION_VIEW);
@@ -491,7 +491,7 @@ export default function LandDetail() {
                                         {lot.status !== 'available' && (
                                             <div className="mt-2 pt-2 border-t border-gray-100/50">
                                                 <p className="text-[10px] uppercase font-bold text-gray-600 truncate">
-                                                    {lot.client ? `${lot.client.firstName} ${lot.client.lastName}` : lot.status}
+                                                    {lot.client ? `${lot.client.firstName} ${lot.client.lastName}` : translateStatus(lot.status)}
                                                 </p>
                                             </div>
                                         )}
@@ -524,7 +524,7 @@ export default function LandDetail() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{lot.client ? `${lot.client.firstName} ${lot.client.lastName}` : "-"}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold border", getStatusColor(lot.status))}>{lot.status}</span>
+                                                <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold border", getStatusColor(lot.status))}>{translateStatus(lot.status)}</span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-mono">{formatCurrency(lot.price)}</td>
                                         </tr>

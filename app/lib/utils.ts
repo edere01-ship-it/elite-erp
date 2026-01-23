@@ -30,7 +30,11 @@ export function translateStatus(status: string): string {
         'submitted': 'Soumis',
         'approved': 'Approuvé',
         'terminated': 'Terminé',
-        'on_leave': 'En congé'
+        'on_leave': 'En congé',
+        'available': 'Disponible',
+        'pre_financed': 'Pré-financé',
+        'reserved': 'Réservé',
+        'sold': 'Vendu'
     };
     return map[status] || status;
 }

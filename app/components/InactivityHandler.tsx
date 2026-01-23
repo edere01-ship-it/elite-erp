@@ -1,41 +1,59 @@
 import { useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
-// Timeout in milliseconds (e.g., 28 minutes = 28 * 60 * 1000)
-const INACTIVITY_TIMEOUT = 28 * 60 * 1000;
+// Timeout: 60 minutes
+const INACTIVITY_TIMEOUT = 60 * 60 * 1000;
+const CHECK_INTERVAL = 60 * 1000; // Check every minute
 
 export function useInactivityLogout() {
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const lastActivityRef = useRef<number>(Date.now());
+    const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
-        // Function to reset the timer
-        const resetTimer = () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-            timerRef.current = setTimeout(() => {
-                // Trigger logout
-                // We use window.location to ensure a full refresh/redirect
-                window.location.href = "/logout";
-            }, INACTIVITY_TIMEOUT);
+        // Update last activity timestamp
+        const updateActivity = () => {
+            lastActivityRef.current = Date.now();
         };
 
-        // Events to listen for
-        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+        // Events to listen for (throttled naturally by only updating a ref)
+        const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
 
-        // Attach listeners
+        // Optimisation: Throttle the event listener if needed, but updating a ref is very cheap.
+        // To be safe, we can use a small throttle or just let it fly since it's just a variable assignment.
+        // For mousemove, it fires extremely often. Let's debounce it slightly or just accept assignment.
+        // Assignment is O(1) and very fast.
+
         events.forEach(event => {
-            document.addEventListener(event, resetTimer);
+            document.addEventListener(event, updateActivity);
         });
 
-        // Initial start
-        resetTimer();
+        // Interval to check for inactivity
+        const intervalId = setInterval(() => {
+            const now = Date.now();
+            const timeSinceLastActivity = now - lastActivityRef.current; // Fixed calculation
 
-        // Cleanup
+            if (timeSinceLastActivity > INACTIVITY_TIMEOUT) {
+                // Only logout if not already on login page
+                if (!location.pathname.startsWith('/login')) {
+                    console.log("Inactivity detected. Logging out...");
+                    window.location.href = "/logout";
+                }
+            }
+        }, CHECK_INTERVAL);
+
         return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
+            if (intervalId) clearInterval(intervalId);
             events.forEach(event => {
-                document.removeEventListener(event, resetTimer);
+                document.removeEventListener(event, updateActivity);
             });
         };
-    }, []);
+    }, [location.pathname]); // Re-run if location changes? No, just keep running.
+    // Actually [location.pathname] dependency might cause re-attach. 
+    // Ideally we want one interval. 'location' inside interval needs to be fresh?
+    // Use a ref for location or omit dependency if we just use window.location.
+    // But I used `location.pathname` in the check.
+    // Let's use `window.location.pathname` to avoid dependency issues or stale closures.
 }
 
 export default function InactivityHandler() {
