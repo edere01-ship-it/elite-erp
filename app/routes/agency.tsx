@@ -17,6 +17,7 @@ import {
     Calendar
 } from "lucide-react";
 import { cn } from "~/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const user = await requirePermission(request, PERMISSIONS.AGENCY_VIEW);
@@ -43,17 +44,34 @@ export async function loader({ request }: LoaderFunctionArgs) {
         getAgencyEnhancedStats(agencyId)
     ]);
 
+    // Fetch Land Developments with Lot Stats
+    const rawDevelopments = await prisma.landDevelopment.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+            lots: {
+                select: { status: true }
+            }
+        }
+    });
+
+    const developments = rawDevelopments.map(dev => ({
+        ...dev,
+        availableLots: dev.lots.filter(l => l.status === 'available').length,
+        soldLots: dev.lots.filter(l => l.status === 'sold').length,
+        reservedLots: dev.lots.filter(l => l.status === 'reserved').length,
+    }));
+
     // Fetch agency details if we only had the ID
     const agency = employee?.agency ?? await prisma.agency.findUnique({ where: { id: agencyId } });
 
-    return { user, agency, stats, enhancedStats };
+    return { user, agency, stats, enhancedStats, developments };
 }
 
 import { PremiumBackground } from "~/components/ui/PremiumBackground";
 import { StatCard } from "~/components/dashboard/StatCard";
 
 export default function AgencyDashboard() {
-    const { user, agency, stats, enhancedStats } = useLoaderData<typeof loader>();
+    const { user, agency, stats, enhancedStats, developments } = useLoaderData<typeof loader>();
     const location = useLocation();
 
     if (!agency || !stats || !enhancedStats) {
@@ -190,6 +208,61 @@ export default function AgencyDashboard() {
 
                         {/* LEFT COLUMN: Revenue Chart */}
                         <div className="lg:col-span-2 space-y-8">
+                            {/* Lotissements Overview */}
+                            <div className="bg-white/70 backdrop-blur-xl shadow-lg rounded-3xl border border-white/50 overflow-hidden">
+                                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                                    <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                        <Building2 className="w-6 h-6 text-purple-600" />
+                                        Lotissements en cours
+                                    </h3>
+                                    <span className="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">{developments.length} Projets</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-slate-100">
+                                        <thead className="bg-slate-50/50">
+                                            <tr>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Projet</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Lots Totaux</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Disponibles</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Vendus</th>
+                                                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Progression</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 bg-white/40">
+                                            {developments.length === 0 ? (
+                                                <tr><td colSpan={5} className="px-6 py-8 text-center text-sm font-medium text-slate-500">Aucun projet de lotissement.</td></tr>
+                                            ) : developments.map((dev) => (
+                                                <tr key={dev.id} className="hover:bg-white/60 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap font-bold text-slate-900">{dev.name}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 font-bold">{dev.totalLots}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                                            {dev.availableLots}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                                                            {dev.soldLots}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap w-32">
+                                                        <div className="w-full bg-slate-200 rounded-full h-2">
+                                                            <div
+                                                                className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                                                style={{ width: `${dev.lots.length > 0 ? (dev.soldLots / dev.lots.length) * 100 : 0}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs text-slate-500 mt-1 inline-block">
+                                                            {dev.lots.length > 0 ? Math.round((dev.soldLots / dev.lots.length) * 100) : 0}% Vendu
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             <div className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-lg border border-white/50 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-64 h-64 bg-slate-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
                                 <h3 className="text-xl font-bold text-slate-800 mb-8 relative z-10">Performance Financière (6 mois)</h3>

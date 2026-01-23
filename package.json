@@ -17,6 +17,7 @@
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "cookie": "^1.1.1",
+    "framer-motion": "^12.29.0",
     "ioredis": "^5.9.1",
     "isbot": "^5.1.31",
     "jspdf": "^4.0.0",

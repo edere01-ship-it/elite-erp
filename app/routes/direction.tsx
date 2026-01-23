@@ -2,6 +2,7 @@
 import { useLoaderData, redirect, Link, type LoaderFunctionArgs, type MetaFunction, type ActionFunctionArgs, useSubmit, Form, useNavigation } from "react-router";
 import { prisma } from "~/db.server";
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { LayoutDashboard, CheckCircle, TrendingUp, Building, Users, Wallet, Briefcase, Plus, AlertCircle, X, HardHat, Map } from "lucide-react";
 import { getSession } from "~/sessions.server";
 import { PERMISSIONS } from "~/utils/permissions";
