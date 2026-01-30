@@ -69,6 +69,11 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     stack = error.stack;
   }
 
+  // Log the error for debugging purposes (even in production to see what's happening)
+  if (error) {
+    console.error("Global ErrorBoundary caught:", error);
+  }
+
   return (
     <main className="pt-16 p-4 container mx-auto">
       <h1>{message}</h1>

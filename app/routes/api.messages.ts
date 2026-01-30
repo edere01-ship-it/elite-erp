@@ -92,33 +92,45 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
-    const session = await getSession(request.headers.get("Cookie"));
-    const userId = session.get("userId");
+    try {
+        const session = await getSession(request.headers.get("Cookie"));
+        const userId = session.get("userId");
 
-    if (!userId) {
-        return Response.json({ error: "Non autorisé" }, { status: 401 });
+        if (!userId) {
+            return Response.json({ error: "Non autorisé" }, { status: 401 });
+        }
+
+        const unreadCount = await getUnreadCount(userId);
+        const { received, sent } = await getMessages(userId);
+        const recipients = await getRecipients(userId);
+
+        const meetings = await prisma.meeting.findMany({
+            where: {
+                OR: [
+                    { organizerId: userId },
+                    { participants: { some: { id: userId } } }
+                ],
+                startTime: { gte: new Date() } // Only upcoming
+            },
+            orderBy: { startTime: 'asc' },
+            include: { organizer: { select: { username: true } } }
+        });
+
+        return Response.json({
+            unreadCount,
+            messages: { received, sent },
+            recipients,
+            meetings
+        });
+    } catch (error) {
+        console.error("Loader error in api.messages:", error);
+        // Return a safe fallback to prevent crashing
+        return Response.json({
+            unreadCount: 0,
+            messages: { received: [], sent: [] },
+            recipients: [],
+            meetings: [],
+            error: "Failed to fetch messages"
+        });
     }
-
-    const unreadCount = await getUnreadCount(userId);
-    const { received, sent } = await getMessages(userId);
-    const recipients = await getRecipients(userId);
-
-    const meetings = await prisma.meeting.findMany({
-        where: {
-            OR: [
-                { organizerId: userId },
-                { participants: { some: { id: userId } } }
-            ],
-            startTime: { gte: new Date() } // Only upcoming
-        },
-        orderBy: { startTime: 'asc' },
-        include: { organizer: { select: { username: true } } }
-    });
-
-    return Response.json({
-        unreadCount,
-        messages: { received, sent },
-        recipients,
-        meetings
-    });
 }
